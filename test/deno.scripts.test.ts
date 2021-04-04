@@ -7,14 +7,13 @@ const fixtureFilename = relative(import.meta.url, "fixture/deno.scripts.md");
 const fixtureText = Deno.readTextFileSync(fixtureFilename);
 const fixtureAst = fromMarkdown(fixtureText);
 
-const [caseSleepEcho] = await exec.config.getRunnable(
-  getCodeFences(fixtureAst)
-);
-const cases = [[caseSleepEcho, `{"x":2}\n`] as const];
-
 Deno.test({
   name: import.meta.url,
   async fn() {
+    const [caseSleepEcho] = await exec.config.getRunnable(
+      getCodeFences(fixtureAst)
+    );
+    const cases = [[caseSleepEcho, `{"x":2}\n`] as const];
     for (const [config, expected] of cases) {
       const output = await exec.runCodeSnippet({
         ...config,

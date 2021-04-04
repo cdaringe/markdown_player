@@ -4,7 +4,9 @@ export type LanguageExecutors = Record<string, ExecutionConfigCreator>;
 export const executionArgSymbol = "$ARG";
 
 const typescript: ExecutionConfigCreator = (content, meta) => {
-  const filename = meta.file?.name || ".tmp.markdown_player.deno.ts";
+  const filename =
+    meta.file?.name ||
+    `.tmp.${Math.random().toString().substr(2, 6)}.markdown_player.deno.ts`;
   const fileAutoRemove = meta.file ? meta.file.autoRemove : true;
   return {
     cmd: "deno",

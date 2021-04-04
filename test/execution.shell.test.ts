@@ -17,7 +17,7 @@ const cases = [
 ];
 
 Deno.test({
-  name: "shell_exec.md - code exec ok on",
+  name: import.meta.url,
   async fn() {
     for (const [config, expected] of cases) {
       const output = await exec.runCodeSnippet({

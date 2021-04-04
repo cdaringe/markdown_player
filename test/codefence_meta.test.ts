@@ -21,7 +21,7 @@ const [
 const createDenoExec = DEFAULT_LANGUAGE_EXECUTORS["ts"]!;
 
 Deno.test({
-  name: "caseEmptyMeta",
+  name: `${import.meta.url} caseEmptyMeta`,
   fn() {
     assertEquals(caseEmptyMeta, {
       cmd: "sh",
@@ -31,7 +31,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "caseSingleMetaWriteFile",
+  name: `${import.meta.url} caseSingleMetaWriteFile`,
   fn() {
     assertEquals(
       caseSingleMetaWriteFile,
@@ -43,7 +43,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "caseSingleMetaWhitespaceWriteFile",
+  name: `${import.meta.url} caseSingleMetaWhitespaceWriteFile`,
   fn() {
     assertEquals(
       caseSingleMetaWhitespaceWriteFile,
@@ -55,7 +55,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "caseMetaMulti",
+  name: `${import.meta.url} caseMetaMulti`,
   fn() {
     assertEquals(caseMetaMulti, {
       cmd: "cmd",
@@ -66,7 +66,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "caseSkipMd",
+  name: `${import.meta.url} caseSkipMd`,
   fn() {
     assertEquals(caseSkipMd, undefined, "caseSkipMd");
   },
