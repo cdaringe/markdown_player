@@ -1,7 +1,6 @@
 # empty meta
 
 ```sh
-
 ```
 
 # supported meta - caseSingleMetaWriteFile
@@ -19,7 +18,6 @@
 # supported meta - multi meta with whitespace
 
 ```ts {filename: /path/to/my username/file.ts, cmd: cmd, args: [cmd, arg0, --flag]}
-
 ```
 
 # skipped md

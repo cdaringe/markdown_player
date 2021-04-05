@@ -1,13 +1,17 @@
-import { MDAST, yaml, zod, path } from "./3p.ts";
+import { MDAST, yaml, zod } from "./3p.ts";
 import {
+  DEFAULT_LANGUAGE_CODEGENERATORS,
   DEFAULT_LANGUAGE_EXECUTORS,
   executionArgSymbol,
 } from "./execution.defaults.ts";
 import type {
+  CmdExecutionTuple,
   ExecutionConfig,
   ExecutionConfigCreator,
 } from "./execution.interfaces.ts";
 import concatStreams from "./concat_streams.ts";
+import { getString as getRandomString } from "./random.ts";
+import { extractNeedleWrappedChunks } from "./haystack.ts";
 
 export * from "./execution.defaults.ts";
 export * from "./execution.interfaces.ts";
@@ -24,17 +28,21 @@ export const config = {
   ofMdNode(node: MDAST, schema: CodeFenceConfig): ExecutionConfig | undefined {
     const createFromDefaults: ExecutionConfigCreator | undefined =
       DEFAULT_LANGUAGE_EXECUTORS[node.lang];
-    if (!node.meta) {
-      if (!createFromDefaults) {
+    function asserts(v: unknown): asserts v {
+      if (!v) {
         throw new Error(
           `no execution provided in codefence, and no default execution for block of ${node.lang}`
         );
       }
-      return createFromDefaults(node.value, {});
+    }
+    if (!node.meta) {
+      asserts(createFromDefaults);
+      return createFromDefaults(node, {});
     }
     const { filename, args, cmd, skipRun } = schema;
-    if (skipRun)
+    if (skipRun) {
       throw new Error(`illegal execution config parse of skipped block`);
+    }
     const mdConfig: Partial<ExecutionConfig> = {
       cmd,
       file: filename ? { name: filename, content: node.value } : undefined,
@@ -44,24 +52,13 @@ export const config = {
     };
     const config = cmd
       ? (mdConfig as ExecutionConfig)
-      : createFromDefaults(node.value, mdConfig);
+      : (() => {
+          asserts(createFromDefaults);
+          return createFromDefaults(node, mdConfig);
+        })();
     // console.log(config);
     return config;
   },
-  // finalize(
-  //   metaExecutionConfig: ExecutionConfig | undefined,
-  //   node: MDAST
-  // ): ExecutionConfig {
-  //   const defaultLangExecution = DEFAULT_LANGUAGE_EXECUTORS[node.lang];
-  //   if (metaExecutionConfig?.cmd) {
-  //     return {
-  //       ...defaultLangExecution,
-  //       ...metaExecutionConfig,
-  //     };
-  //   }
-  //   if (defaultLangExecution) return defaultLangExecution;
-  //   throw new Error(`no execution config available for language ${lang}`);
-  // },
   getRunnable(nodes: MDAST[]) {
     return nodes
       .map(function filterMapExecutableBlock(node) {
@@ -85,9 +82,20 @@ export const config = {
   },
 };
 
-// export const readToBuf = (it: AsyncIterable, bu)
+export function cmdsByGroup(cmds: ExecutionConfig[]): CmdExecutionTuple[] {
+  return cmds.reduce((groupTuples, exec) => {
+    const groupTuple = groupTuples.find(([name]) => name === exec.group);
+    if (!groupTuple) {
+      return [...groupTuples, [exec.group, [exec]] as CmdExecutionTuple];
+    }
+    groupTuple[1].push(exec);
+    return groupTuples;
+  }, [] as CmdExecutionTuple[]);
+}
 
-export async function runCodeSnippet(opts: ExecutionConfig) {
+export async function runCodeSnippet(
+  opts: ExecutionConfig
+): Promise<CmdResult> {
   const {
     cmd,
     args = [],
@@ -102,7 +110,7 @@ export async function runCodeSnippet(opts: ExecutionConfig) {
     // if the execution request a file to be written, write it
     await Deno.writeTextFile(filename, fileContent, { mode: 0o777 });
   }
-  // console.log([cmd, ...args]);
+  // console.log([exec, ...args]);
   let proc: Deno.Process | null = null;
   try {
     const procRun = Deno.run({
@@ -117,7 +125,7 @@ export async function runCodeSnippet(opts: ExecutionConfig) {
     const output = await outputP;
     // console.log(status, output);
     if (status.code) {
-      // console.error(`${cmd} ${args.join(" ")}`);
+      // console.error(`${exec} ${args.join(" ")}`);
       await writeCmdStderr(output);
       throw new Error(`command failed, exit code: ${status.code}`);
     }
@@ -134,6 +142,49 @@ export async function runCodeSnippet(opts: ExecutionConfig) {
   } finally {
     proc?.close();
   }
+}
+
+export type CmdResult = { output: Uint8Array; statusCode: number };
+
+export async function runCodeGroup([groupName, [...cmds]]: CmdExecutionTuple) {
+  const hd = cmds[0];
+  if (!hd) throw new Error("missing cmd in group");
+  if (!cmds.length) return runCodeSnippet(hd);
+  const hdFile = hd.file;
+  if (!hdFile) {
+    throw new Error(
+      `grouped code must be flushed to a file, but no file content present`
+    );
+  }
+  const groupExec: ExecutionConfig = { ...cmds[0], file: { ...hdFile } };
+  const file = groupExec.file!;
+  const outputSymbols = cmds.map((cmd, i) => {
+    const content = cmd.file?.content;
+    if (!content) throw new Error("cannot group. no file content found");
+    const lang = cmd.node.lang;
+    const langPrinter = DEFAULT_LANGUAGE_CODEGENERATORS[lang];
+    if (!langPrinter) {
+      throw new Error(
+        `missing printer for ${lang}. cannot partition code groups`
+      );
+    }
+    const outputSymbol = `mdp_group_${groupName}_${getRandomString()}`;
+    const langEmitSym = langPrinter.print(outputSymbol);
+    const nextChunk = `${langEmitSym}${content}${langEmitSym}`;
+    file.content = i === 0 ? nextChunk : `${file.content}${nextChunk}`;
+    return outputSymbol;
+  });
+  debugger; // eslint-disable-line
+  const result = await runCodeSnippet(groupExec);
+  const outputs = extractNeedleWrappedChunks(
+    new TextDecoder().decode(result.output),
+    outputSymbols
+  );
+  return {
+    ...result,
+    cmds,
+    outputs,
+  };
 }
 
 export type RunnableSnippetCodeFenceMeta = {

@@ -8,7 +8,7 @@ export default async function concat(
         for (const chunk of buffer) arrBuf.push(chunk);
       }
       s.close();
-    })
+    }),
   );
   return new Uint8Array(arrBuf);
 }

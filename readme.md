@@ -40,4 +40,5 @@ https://yaml-online-parser.appspot.com/.
 
 > Error: Exec format error (os error 8)
 
-Did you try to execute a file that was not a binary, or had no `#!/usr/env/bin LANG` block?
+Did you try to execute a file that was not a binary, or had no
+`#!/usr/env/bin LANG` block?

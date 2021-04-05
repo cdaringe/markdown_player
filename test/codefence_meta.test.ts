@@ -5,7 +5,7 @@ import { relative } from "./fixture/setup.ts";
 import { DEFAULT_LANGUAGE_EXECUTORS } from "../src/execution.defaults.ts";
 
 const fixture = Deno.readTextFileSync(
-  relative(import.meta.url, "fixture/codefence_meta_whitespace.md")
+  relative(import.meta.url, "codefence_meta.md"),
 );
 
 const fixtureAst = fromMarkdown(fixture);
@@ -19,14 +19,18 @@ const [
 ] = exec.config.getRunnable(getCodeFences(fixtureAst));
 
 const createDenoExec = DEFAULT_LANGUAGE_EXECUTORS["ts"]!;
+const createShExec = DEFAULT_LANGUAGE_EXECUTORS["sh"]!;
 
 Deno.test({
   name: `${import.meta.url} caseEmptyMeta`,
   fn() {
-    assertEquals(caseEmptyMeta, {
-      cmd: "sh",
-      args: ["-c", ""],
-    } as exec.CodeFenceConfig);
+    assertEquals(
+      caseEmptyMeta,
+      createShExec(caseEmptyMeta.node, {
+        cmd: "sh",
+        args: ["-c", ""],
+      }),
+    );
   },
 });
 
@@ -35,9 +39,9 @@ Deno.test({
   fn() {
     assertEquals(
       caseSingleMetaWriteFile,
-      createDenoExec(`#!/usr/bin/env deno`, {
+      createDenoExec(caseSingleMetaWriteFile.node, {
         file: { name: "ok.ts" },
-      })
+      }),
     );
   },
 });
@@ -47,9 +51,9 @@ Deno.test({
   fn() {
     assertEquals(
       caseSingleMetaWhitespaceWriteFile,
-      createDenoExec("#!/usr/bin/env deno", {
+      createDenoExec(caseSingleMetaWhitespaceWriteFile.node, {
         file: { name: "file with white space.ts" },
-      })
+      }),
     );
   },
 });

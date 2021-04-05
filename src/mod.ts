@@ -1,11 +1,18 @@
 import { fromMarkdown, MDAST, mdAstVisit, pMap } from "./3p.ts";
 import * as exec from "./execution.ts";
 export { exec };
-type RunConfig = {
+import { pipe } from "./fp.ts";
+
+export type RunConfig = {
   languageExecutors: exec.LanguageExecutors;
 };
-type PlayFileOptions = {
+
+export type PlayFileOptions = {
   runConfig?: RunConfig;
+  /**
+   * Set to value >1 if code blocks are safe to be run independently
+   */
+  concurrency?: number;
 };
 
 export function getNodes(ast: MDAST, type: string) {
@@ -20,9 +27,13 @@ export function getNodes(ast: MDAST, type: string) {
 export const getCodeFences = (ast: MDAST) => getNodes(ast, "code");
 
 export async function playFile(filename: string, options?: PlayFileOptions) {
-  const contents = await Deno.readTextFile(filename);
-  const ast = fromMarkdown(contents);
-  const toRun = exec.config.getRunnable(getCodeFences(ast));
-  const results = await pMap(toRun, exec.runCodeSnippet, { concurrency: 1 });
-  return results;
+  const text = await Deno.readTextFile(filename);
+  const ast = fromMarkdown(text);
+  const fences = getCodeFences(ast);
+  const runnable = exec.config.getRunnable(fences);
+  const groups = exec.cmdsByGroup(runnable);
+  const runs = await pMap(groups, (gTuple) => exec.runCodeGroup(gTuple), {
+    concurrency: options?.concurrency || 1,
+  });
+  return { ast, runs };
 }

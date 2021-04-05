@@ -1,4 +1,3 @@
-import defaults from "https://esm.sh/lodash@4.17.9/fp/defaults?no-check";
 export * as markdown from "https://deno.land/x/markdown@v2.0.0/mod.ts";
 export * as yaml from "https://deno.land/std@0.91.0/encoding/yaml.ts";
 export * as path from "https://deno.land/std@0.91.0/path/mod.ts";

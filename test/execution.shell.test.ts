@@ -4,12 +4,12 @@ import { exec, getCodeFences } from "../src/mod.ts";
 import { relative } from "./fixture/setup.ts";
 
 const fixture = Deno.readTextFileSync(
-  relative(import.meta.url, "fixture/shell_exec.md")
+  relative(import.meta.url, "fixture/shell_exec.md"),
 );
 const fixtureAst = fromMarkdown(fixture);
 
 const [basicEcho, echoFromFile] = await exec.config.getRunnable(
-  getCodeFences(fixtureAst)
+  getCodeFences(fixtureAst),
 );
 const cases = [
   [basicEcho, "test_echo\n"] as const,
