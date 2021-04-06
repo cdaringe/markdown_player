@@ -1,0 +1,23 @@
+name: pull-request
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # https://github.com/JamesIves/github-pages-deploy-action#getting-started-airplane
+      - name: checkout 🛎️
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      # https://github.com/denolib/setup-deno
+      - uses: denolib/setup-deno@master
+        with:
+          deno-version: 1.8.2
+
+      - name: install-rad
+        run: deno install --unstable -f -A -n rad https://raw.githubusercontent.com/cdaringe/rad/v6.3.6/src/bin.ts
+
+      - name: check
+        run: rad check

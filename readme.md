@@ -1,6 +1,10 @@
 # markdown_player
 
-Executable markdown files. Runs code fences in a markdown file.
+▶️ Executable markdown files.
+
+Runs code fences in a markdown file.
+
+## why?
 
 Documentation or demonstration? Which is more powerful for helping users? Why
 settle for just one? What if you could deliver both, from the same markdown
