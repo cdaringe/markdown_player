@@ -1,5 +1,7 @@
 # markdown_player
 
+## warning - alpha software, do not use
+
 ▶️ Executable markdown files.
 
 Runs code fences in a markdown file.
@@ -7,13 +9,13 @@ Runs code fences in a markdown file.
 ## why?
 
 Documentation or demonstration? Which is more powerful for helping users? Why
-settle for just one? What if you could deliver both, from the same markdown
-file(s)?
+settle for just one? What if you could deliver both, from the exact same markdown
+content?
 
 Turn your markdown _into_ an application!
 
 ```sh {skipRun: true}
-deno install -A --unstable
+deno install -A --unstable ...
 ```
 
 ## api
