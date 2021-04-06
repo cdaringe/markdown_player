@@ -10,8 +10,8 @@ export type LanguageCodegen = Record<string, Codegen>;
 export const executionArgSymbol = "$ARG";
 
 const typescript: ExecutionConfigCreator = (node, meta) => {
-  const filename = meta.file?.name ||
-    `.tmp.${getRandomString()}.markdown_player.deno.ts`;
+  const filename =
+    meta.file?.name || `.tmp.${getRandomString()}.markdown_player.deno.ts`;
   const fileAutoRemove = meta.file ? meta.file.autoRemove : true;
   return {
     cmd: "deno",
@@ -39,7 +39,7 @@ export const DEFAULT_LANGUAGE_EXECUTORS: LanguageExecutors = {
 };
 
 const tsCodegen: Codegen = {
-  print: (s) => `\nconsole.log("${s.replaceAll('"', '"')}");\n`,
+  print: (s) => `;Deno.stdout.writeSync(new TextEncoder().encode("${s}"));`,
 };
 const shCodegen: Codegen = {
   print: (s) => `echo ${s}`,

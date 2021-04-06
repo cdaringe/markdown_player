@@ -100,8 +100,8 @@ export async function runCodeSnippet(
     cmd,
     args = [],
     file,
-    writeCmdStdout = Deno.stdout.write,
-    writeCmdStderr = Deno.stderr.write,
+    writeCmdStdout = Deno.stdout.write.bind(Deno.stdout),
+    writeCmdStderr = Deno.stderr.write.bind(Deno.stderr),
   } = opts;
   // console.log(opts);
   const filename = file?.name;

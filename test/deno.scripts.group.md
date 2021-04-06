@@ -1,7 +1,7 @@
 Here's a block with two vars:
 
 ```ts {group: test_group}
-const what = "what's the meaning of life?";
+const what = 'what\'s the meaning of life, "dudeskie"?';
 const meaning = 42;
 console.log(what);
 ```
