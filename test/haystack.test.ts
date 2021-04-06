@@ -30,7 +30,7 @@ Deno.test({
   fn() {
     const actual = extractNeedleWrappedChunks(
       fixture,
-      [1, 2, 3].map((i) => `// needle-${i}`)
+      [1, 2, 3].map((i) => `// needle-${i}`),
     );
     const expected = [
       `

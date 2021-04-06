@@ -31,7 +31,7 @@ export const config = {
     function asserts(v: unknown): asserts v {
       if (!v) {
         throw new Error(
-          `no execution provided in codefence, and no default execution for block of ${node.lang}`
+          `no execution provided in codefence, and no default execution for block of ${node.lang}`,
         );
       }
     }
@@ -46,16 +46,12 @@ export const config = {
     const mdConfig: Partial<ExecutionConfig> = {
       cmd,
       file: filename ? { name: filename, content: node.value } : undefined,
-      args: args?.map((v: string) =>
-        v === executionArgSymbol ? node.value : v
-      ),
+      args: args?.map((v: string) => v === executionArgSymbol ? node.value : v),
     };
-    const config = cmd
-      ? (mdConfig as ExecutionConfig)
-      : (() => {
-          asserts(createFromDefaults);
-          return createFromDefaults(node, mdConfig);
-        })();
+    const config = cmd ? (mdConfig as ExecutionConfig) : (() => {
+      asserts(createFromDefaults);
+      return createFromDefaults(node, mdConfig);
+    })();
     // console.log(config);
     return config;
   },
@@ -66,8 +62,7 @@ export const config = {
           ? codeFenceExecConfigSchema.parse(yaml.parse(node.meta))
           : {};
         const isSkipping = !!metaExecution.skipRun;
-        const shouldAttemptExecution =
-          !isSkipping &&
+        const shouldAttemptExecution = !isSkipping &&
           !!(metaExecution.cmd || DEFAULT_LANGUAGE_EXECUTORS[node.lang]);
         return shouldAttemptExecution
           ? config.ofMdNode(node, metaExecution)
@@ -94,7 +89,7 @@ export function cmdsByGroup(cmds: ExecutionConfig[]): CmdExecutionTuple[] {
 }
 
 export async function runCodeSnippet(
-  opts: ExecutionConfig
+  opts: ExecutionConfig,
 ): Promise<CmdResult> {
   const {
     cmd,
@@ -136,7 +131,7 @@ export async function runCodeSnippet(
       [
         `failed to run process ${[cmd, ...args].join(" ")}\n\n`,
         `\t${err}`,
-      ].join("")
+      ].join(""),
     );
     throw err;
   } finally {
@@ -153,7 +148,7 @@ export async function runCodeGroup([groupName, [...cmds]]: CmdExecutionTuple) {
   const hdFile = hd.file;
   if (!hdFile) {
     throw new Error(
-      `grouped code must be flushed to a file, but no file content present`
+      `grouped code must be flushed to a file, but no file content present`,
     );
   }
   const groupExec: ExecutionConfig = { ...cmds[0], file: { ...hdFile } };
@@ -165,7 +160,7 @@ export async function runCodeGroup([groupName, [...cmds]]: CmdExecutionTuple) {
     const langPrinter = DEFAULT_LANGUAGE_CODEGENERATORS[lang];
     if (!langPrinter) {
       throw new Error(
-        `missing printer for ${lang}. cannot partition code groups`
+        `missing printer for ${lang}. cannot partition code groups`,
       );
     }
     const outputSymbol = `mdp_group_${groupName}_${getRandomString()}`;
@@ -174,11 +169,10 @@ export async function runCodeGroup([groupName, [...cmds]]: CmdExecutionTuple) {
     file.content = i === 0 ? nextChunk : `${file.content}${nextChunk}`;
     return outputSymbol;
   });
-  debugger; // eslint-disable-line
   const result = await runCodeSnippet(groupExec);
   const outputs = extractNeedleWrappedChunks(
     new TextDecoder().decode(result.output),
-    outputSymbols
+    outputSymbols,
   );
   return {
     ...result,

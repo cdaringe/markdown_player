@@ -1,6 +1,6 @@
 export function extractNeedleWrappedChunks(
   haystack: string,
-  needles: string[]
+  needles: string[],
 ) {
   function getIdx(needle: string, start = 0) {
     const i = haystack.indexOf(needle, start);
