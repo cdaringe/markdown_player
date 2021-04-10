@@ -5,12 +5,12 @@ import { relative } from "./fixture/setup.ts";
 
 const fixtureFilename = relative(
   import.meta.url,
-  "create-fence-block-stream.md"
+  "create-fence-block-stream.md",
 );
 
 async function pipeFileToStream<S extends TransformStream>(
   filename: string,
-  stream: S
+  stream: S,
 ) {
   const file = await Deno.open(filename);
   const writer = stream.writable.getWriter();

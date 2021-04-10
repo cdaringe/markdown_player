@@ -12,7 +12,7 @@ export const executionArgSymbol = "$ARG";
 const typescript: ExecutionConfigCreator = (node, meta) => {
   const filename = meta.file?.name ||
     `.tmp.${getRandomString()}.markdown_player.deno.ts`;
-  const fileAutoRemove = meta.file ? meta.file.autoRemove : true;
+  const fileAutoRemove = meta.file ? !!meta.file.autoRemove : true;
   return {
     cmd: "deno",
     // `deno eval` does not yet support typescript. deno scripts must be written

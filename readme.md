@@ -35,7 +35,7 @@ Example:
 
 delete me
 
-```ts {filename: cool file.ts, cmd: deno, args: [eval, $ARG]}
+```ts {file: {name: cool file.ts, autoRemove: true}, cmd: deno, args: [eval, $ARG]}
 console.log(123);
 ```
 

@@ -1,7 +1,6 @@
 import { fromMarkdown, MDAST, mdAstVisit, pMap } from "./3p.ts";
 import * as exec from "./execution.ts";
 export { exec };
-import { pipe } from "./fp.ts";
 
 export type RunConfig = {
   languageExecutors: exec.LanguageExecutors;

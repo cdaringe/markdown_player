@@ -4,7 +4,7 @@ import { exec, getCodeFences } from "../src/mod.ts";
 import { relative } from "./fixture/setup.ts";
 
 const fixture = Deno.readTextFileSync(
-  relative(import.meta.url, "fixture/shell_exec.md"),
+  relative(import.meta.url, "execution.shell.md"),
 );
 const fixtureAst = fromMarkdown(fixture);
 

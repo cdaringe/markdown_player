@@ -5,19 +5,19 @@
 
 # supported meta - caseSingleMetaWriteFile
 
-```ts {filename: ok.ts}
+```ts {file: { name: ok.ts} }
 #!/usr/bin/env deno
 ```
 
 # supported meta - caseSingleMetaWhitespaceWriteFile
 
-```ts {filename: file with white space.ts}
+```ts {file: { name: file with white space.ts } }
 #!/usr/bin/env deno
 ```
 
 # supported meta - caseSingleMetaWhitespaceWriteFile
 
-```ts {filename: /path/to/my username/file.ts, cmd: cmd, args: [cmd, arg0, --flag]}
+```ts {file: { name: /path/to/my username/file.ts }, cmd: cmd, args: [cmd, arg0, --flag]}
 ```
 
 # skipped md

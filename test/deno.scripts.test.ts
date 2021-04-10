@@ -26,7 +26,6 @@ Deno.test({
         },
       });
       assertEquals(output.statusCode, 0);
-      if (config.file?.name) await Deno.remove(config?.file.name);
     }
   },
 });

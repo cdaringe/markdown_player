@@ -5,6 +5,7 @@ import {
   executionArgSymbol,
 } from "./execution.defaults.ts";
 import type {
+  CmdExecution,
   CmdExecutionTuple,
   ExecutionConfig,
   ExecutionConfigCreator,
@@ -16,12 +17,20 @@ import { extractNeedleWrappedChunks } from "./haystack.ts";
 export * from "./execution.defaults.ts";
 export * from "./execution.interfaces.ts";
 
-const codeFenceExecConfigSchema = zod.object({
-  skipRun: zod.boolean().optional(),
-  cmd: zod.string().optional(),
-  filename: zod.string().optional(),
-  args: zod.array(zod.string()).optional(),
-});
+const codeFenceExecConfigSchema = zod
+  .object({
+    group: zod.string().optional(),
+    skipRun: zod.boolean().optional(),
+    cmd: zod.string().optional(),
+    file: zod
+      .object({
+        name: zod.string(),
+        autoRemove: zod.boolean().optional(),
+      })
+      .optional(),
+    args: zod.array(zod.string()).optional(),
+  })
+  .strict();
 export type CodeFenceConfig = zod.infer<typeof codeFenceExecConfigSchema>;
 
 export const config = {
@@ -39,13 +48,16 @@ export const config = {
       asserts(createFromDefaults);
       return createFromDefaults(node, {});
     }
-    const { filename, args, cmd, skipRun } = schema;
+    const { file, args, cmd, skipRun } = schema;
+    const { name: filename, autoRemove = false } = file || {};
     if (skipRun) {
       throw new Error(`illegal execution config parse of skipped block`);
     }
     const mdConfig: Partial<ExecutionConfig> = {
       cmd,
-      file: filename ? { name: filename, content: node.value } : undefined,
+      file: filename
+        ? { name: filename, content: node.value, autoRemove }
+        : undefined,
       args,
       node,
     };
@@ -102,9 +114,7 @@ export async function runCodeSnippet(
     writeCmdStdout = Deno.stdout.write.bind(Deno.stdout),
     writeCmdStderr = Deno.stderr.write.bind(Deno.stderr),
   } = opts;
-  // console.log(opts);
-  const filename = file?.name;
-  const fileContent = file?.content || "";
+  const { name: filename, content: fileContent = "", autoRemove } = file || {};
   if (filename) {
     try {
       // if the execution request a file to be written, write it
@@ -113,7 +123,7 @@ export async function runCodeSnippet(
       throw new Error(`failed to write file ${filename}: ${err}`);
     }
   }
-  // console.log([exec, ...args]);
+  // console.log([cmd, ...args]);
   let proc: Deno.Process | null = null;
   try {
     const procRun = Deno.run({
@@ -141,30 +151,36 @@ export async function runCodeSnippet(
     console.error(
       [
         `failed to run process ${[cmd, ...args].join(" ")}\n\n`,
-        `\t${err}`,
+        `\t${err?.stack || err}`,
       ].join(""),
     );
     throw err;
   } finally {
+    if (autoRemove && filename) await Deno.remove(filename);
     proc?.close();
   }
 }
 
 export type CmdResult = { output: Uint8Array; statusCode: number };
 
-export async function runCodeGroup([groupName, [...cmds]]: CmdExecutionTuple) {
-  const hd = cmds[0];
-  if (!hd) throw new Error("missing cmd in group");
-  if (!cmds.length) return runCodeSnippet(hd);
-  const hdFile = hd.file;
-  if (!hdFile) {
+function createGroupedFenceExecution({
+  cmds,
+  groupName,
+}: {
+  cmds: CmdExecution[];
+  groupName: string;
+}) {
+  const [cmd0] = cmds;
+  if (!cmd0) throw new Error("missing cmd in group");
+  const cmd0File = cmd0.file;
+  if (!cmd0File) {
     throw new Error(
-      `grouped code must be flushed to a file, but no file content present`,
+      `grouped code must be flushed to a cmd0File, but no cmd0File content present`,
     );
   }
-  const groupExec: ExecutionConfig = { ...cmds[0], file: { ...hdFile } };
-  const file = groupExec.file!;
-  const outputSymbols = cmds.map((cmd, i) => {
+  const file = { ...cmd0File };
+  const exec: ExecutionConfig = { ...cmd0, file };
+  const outputDelimiters = cmds.map((cmd, i) => {
     const content = cmd.file?.content;
     if (!content) throw new Error("cannot group. no file content found");
     const lang = cmd.node.lang;
@@ -180,14 +196,26 @@ export async function runCodeGroup([groupName, [...cmds]]: CmdExecutionTuple) {
     file.content = i === 0 ? nextChunk : `${file.content}${nextChunk}`;
     return outputSymbol;
   });
+  return { exec, outputDelimiters };
+}
+
+export async function runCodeGroup([
+  groupName = "default",
+  cmds,
+]: CmdExecutionTuple) {
+  if (cmds.length === 1) return runCodeSnippet(cmds[0]);
+  const { exec, outputDelimiters } = createGroupedFenceExecution({
+    cmds,
+    groupName,
+  });
   const result = await runCodeSnippet({
-    ...groupExec,
+    ...exec,
     // writeCmdStderr: chunkStream.write,
     // writeCmdStdout: chunkStream.write,
   });
   const outputs = extractNeedleWrappedChunks(
     new TextDecoder().decode(result.output),
-    outputSymbols,
+    outputDelimiters,
   );
   return {
     ...result,

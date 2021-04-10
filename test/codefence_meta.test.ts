@@ -69,7 +69,11 @@ Deno.test({
     assertEquals(expected, {
       cmd: "cmd",
       args: ["cmd", "arg0", "--flag"],
-      file: { name: "/path/to/my username/file.ts", content: "" },
+      file: {
+        name: "/path/to/my username/file.ts",
+        content: "",
+        autoRemove: false,
+      },
     } as exec.CodeFenceConfig);
   },
 });
