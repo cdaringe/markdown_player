@@ -13,6 +13,6 @@ export type MDAST = {
   value: string;
   parent?: MDAST;
 };
-export const toMarkdown = toMarkdown_ as (ast: MDAST) => string;
-export const fromMarkdown = fromMarkdown_ as (md: string) => MDAST;
+export const toMarkdown = (toMarkdown_ as unknown) as (ast: MDAST) => string;
+export const fromMarkdown = (fromMarkdown_ as unknown) as (md: string) => MDAST;
 export const mdAstVisit = mdAstVisit_;

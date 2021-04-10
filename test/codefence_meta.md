@@ -15,7 +15,7 @@
 #!/usr/bin/env deno
 ```
 
-# supported meta - multi meta with whitespace
+# supported meta - caseSingleMetaWhitespaceWriteFile
 
 ```ts {filename: /path/to/my username/file.ts, cmd: cmd, args: [cmd, arg0, --flag]}
 ```

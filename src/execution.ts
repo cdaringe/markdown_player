@@ -46,7 +46,8 @@ export const config = {
     const mdConfig: Partial<ExecutionConfig> = {
       cmd,
       file: filename ? { name: filename, content: node.value } : undefined,
-      args: args?.map((v: string) => v === executionArgSymbol ? node.value : v),
+      args,
+      node,
     };
     const config = cmd ? (mdConfig as ExecutionConfig) : (() => {
       asserts(createFromDefaults);
@@ -81,7 +82,10 @@ export function cmdsByGroup(cmds: ExecutionConfig[]): CmdExecutionTuple[] {
   return cmds.reduce((groupTuples, exec) => {
     const groupTuple = groupTuples.find(([name]) => name === exec.group);
     if (!groupTuple) {
-      return [...groupTuples, [exec.group, [exec]] as CmdExecutionTuple];
+      return [
+        ...(groupTuples || []),
+        [exec.group, [exec]] as CmdExecutionTuple,
+      ];
     }
     groupTuple[1].push(exec);
     return groupTuples;
@@ -102,14 +106,21 @@ export async function runCodeSnippet(
   const filename = file?.name;
   const fileContent = file?.content || "";
   if (filename) {
-    // if the execution request a file to be written, write it
-    await Deno.writeTextFile(filename, fileContent, { mode: 0o777 });
+    try {
+      // if the execution request a file to be written, write it
+      await Deno.writeTextFile(filename, fileContent, { mode: 0o777 });
+    } catch (err) {
+      throw new Error(`failed to write file ${filename}: ${err}`);
+    }
   }
   // console.log([exec, ...args]);
   let proc: Deno.Process | null = null;
   try {
     const procRun = Deno.run({
-      cmd: [cmd, ...args],
+      cmd: [
+        cmd,
+        ...args.map((v: string) => v === executionArgSymbol ? fileContent : v),
+      ],
       stdin: "inherit",
       stdout: "piped",
       stderr: "piped",
@@ -169,7 +180,11 @@ export async function runCodeGroup([groupName, [...cmds]]: CmdExecutionTuple) {
     file.content = i === 0 ? nextChunk : `${file.content}${nextChunk}`;
     return outputSymbol;
   });
-  const result = await runCodeSnippet(groupExec);
+  const result = await runCodeSnippet({
+    ...groupExec,
+    // writeCmdStderr: chunkStream.write,
+    // writeCmdStdout: chunkStream.write,
+  });
   const outputs = extractNeedleWrappedChunks(
     new TextDecoder().decode(result.output),
     outputSymbols,

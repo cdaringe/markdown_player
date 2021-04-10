@@ -3,13 +3,12 @@ import { fromMarkdown } from "../src/3p.ts";
 import { exec, getCodeFences } from "../src/mod.ts";
 import { relative } from "./fixture/setup.ts";
 
-const fixtureFilename = relative(import.meta.url, "fixture/deno.scripts.md");
-const fixtureText = Deno.readTextFileSync(fixtureFilename);
-const fixtureAst = fromMarkdown(fixtureText);
-
 Deno.test({
   name: import.meta.url,
   async fn() {
+    const fixtureFilename = relative(import.meta.url, "deno.scripts.md");
+    const fixtureText = Deno.readTextFileSync(fixtureFilename);
+    const fixtureAst = fromMarkdown(fixtureText);
     const [caseSleepEcho] = await exec.config.getRunnable(
       getCodeFences(fixtureAst),
     );

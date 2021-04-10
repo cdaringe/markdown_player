@@ -33,8 +33,14 @@ markdown codefences have the form:
 
 Example:
 
+delete me
+
+```ts {filename: cool file.ts, cmd: deno, args: [eval, $ARG]}
+console.log(123);
+```
+
 ````md
-```ts {filename: /path/to/my \username/file.ts, cmd: deno, args: [eval, $ARG]}
+```ts {filename: cool file.ts, cmd: deno, args: [eval, $ARG]}
 console.log(123);
 ```
 ````

@@ -61,7 +61,12 @@ Deno.test({
 Deno.test({
   name: `${import.meta.url} caseMetaMulti`,
   fn() {
-    assertEquals(caseMetaMulti, {
+    const expected = {
+      cmd: caseMetaMulti.cmd,
+      args: caseMetaMulti.args,
+      file: caseMetaMulti.file,
+    };
+    assertEquals(expected, {
       cmd: "cmd",
       args: ["cmd", "arg0", "--flag"],
       file: { name: "/path/to/my username/file.ts", content: "" },

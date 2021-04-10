@@ -15,6 +15,16 @@
       "attachSimplePort": 9229
     },
     {
+      "name": "Deno: Test",
+      "request": "launch",
+      "type": "pwa-node",
+      // "program": "src/bin.ts",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": ["test", "--unstable", "--inspect-brk", "--allow-all"],
+      "attachSimplePort": 9229
+    },
+    {
       "name": "Attach",
       "port": 9229,
       "request": "attach",
