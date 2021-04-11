@@ -1,4 +1,4 @@
-import { MDAST, yaml, zod } from "./3p.ts";
+import { MDAST, yaml, zod, writerFromStreamWriter } from "./3p.ts";
 import {
   DEFAULT_LANGUAGE_CODEGENERATORS,
   DEFAULT_LANGUAGE_EXECUTORS,
@@ -13,13 +13,20 @@ import type {
 import concatStreams from "./concat_streams.ts";
 import { getString as getRandomString } from "./random.ts";
 import { extractNeedleWrappedChunks } from "./haystack.ts";
+import { createFenceBlockStream } from "./create-fence-block-stream.ts";
 
 export * from "./execution.defaults.ts";
 export * from "./execution.interfaces.ts";
 
+const EXEC_GROUP_PREFIX = `@@mdpg_pre`;
+const EXEC_GROUP_POSTFIX = `@@mdpg_post`;
+
 const codeFenceExecConfigSchema = zod
   .object({
-    group: zod.string().optional(),
+    group: zod
+      .string()
+      .refine((s) => s.match(/[a-zA-Z_]+/))
+      .optional(),
     skipRun: zod.boolean().optional(),
     cmd: zod.string().optional(),
     file: zod
@@ -40,7 +47,7 @@ export const config = {
     function asserts(v: unknown): asserts v {
       if (!v) {
         throw new Error(
-          `no execution provided in codefence, and no default execution for block of ${node.lang}`,
+          `no execution provided in codefence, and no default execution for block of ${node.lang}`
         );
       }
     }
@@ -61,10 +68,12 @@ export const config = {
       args,
       node,
     };
-    const config = cmd ? (mdConfig as ExecutionConfig) : (() => {
-      asserts(createFromDefaults);
-      return createFromDefaults(node, mdConfig);
-    })();
+    const config = cmd
+      ? (mdConfig as ExecutionConfig)
+      : (() => {
+          asserts(createFromDefaults);
+          return createFromDefaults(node, mdConfig);
+        })();
     // console.log(config);
     return config;
   },
@@ -75,7 +84,8 @@ export const config = {
           ? codeFenceExecConfigSchema.parse(yaml.parse(node.meta))
           : {};
         const isSkipping = !!metaExecution.skipRun;
-        const shouldAttemptExecution = !isSkipping &&
+        const shouldAttemptExecution =
+          !isSkipping &&
           !!(metaExecution.cmd || DEFAULT_LANGUAGE_EXECUTORS[node.lang]);
         return shouldAttemptExecution
           ? config.ofMdNode(node, metaExecution)
@@ -105,14 +115,14 @@ export function cmdsByGroup(cmds: ExecutionConfig[]): CmdExecutionTuple[] {
 }
 
 export async function runCodeSnippet(
-  opts: ExecutionConfig,
+  opts: ExecutionConfig
 ): Promise<CmdResult> {
   const {
     cmd,
     args = [],
     file,
-    writeCmdStdout = Deno.stdout.write.bind(Deno.stdout),
-    writeCmdStderr = Deno.stderr.write.bind(Deno.stderr),
+    outStream = Deno.stdout,
+    errStream = Deno.stderr,
   } = opts;
   const { name: filename, content: fileContent = "", autoRemove } = file || {};
   if (filename) {
@@ -129,30 +139,33 @@ export async function runCodeSnippet(
     const procRun = Deno.run({
       cmd: [
         cmd,
-        ...args.map((v: string) => v === executionArgSymbol ? fileContent : v),
+        ...args.map((v: string) =>
+          v === executionArgSymbol ? fileContent : v
+        ),
       ],
       stdin: "inherit",
       stdout: "piped",
       stderr: "piped",
     });
     proc = procRun;
-    const outputP = concatStreams(procRun.stdout, procRun.stderr);
-    const status = await procRun.status();
-    const output = await outputP;
-    // console.log(status, output);
+    // const outputP = concatStreams(procRun.stdout, procRun.stderr);
+    const [_, __, status] = await Promise.all([
+      Deno.copy(procRun.stdout, outStream),
+      Deno.copy(procRun.stderr, errStream),
+      procRun.status(),
+    ]);
+    procRun.stdout.close();
+    procRun.stderr.close();
     if (status.code) {
-      // console.error(`${exec} ${args.join(" ")}`);
-      await writeCmdStderr(output);
       throw new Error(`command failed, exit code: ${status.code}`);
     }
-    await writeCmdStdout(output);
-    return { output, statusCode: status.code };
+    return { statusCode: status.code };
   } catch (err) {
     console.error(
       [
         `failed to run process ${[cmd, ...args].join(" ")}\n\n`,
         `\t${err?.stack || err}`,
-      ].join(""),
+      ].join("")
     );
     throw err;
   } finally {
@@ -161,7 +174,7 @@ export async function runCodeSnippet(
   }
 }
 
-export type CmdResult = { output: Uint8Array; statusCode: number };
+export type CmdResult = { statusCode: number };
 
 function createGroupedFenceExecution({
   cmds,
@@ -175,7 +188,7 @@ function createGroupedFenceExecution({
   const cmd0File = cmd0.file;
   if (!cmd0File) {
     throw new Error(
-      `grouped code must be flushed to a cmd0File, but no cmd0File content present`,
+      `grouped code must be flushed to a cmd0File, but no cmd0File content present`
     );
   }
   const file = { ...cmd0File };
@@ -187,10 +200,10 @@ function createGroupedFenceExecution({
     const langPrinter = DEFAULT_LANGUAGE_CODEGENERATORS[lang];
     if (!langPrinter) {
       throw new Error(
-        `missing printer for ${lang}. cannot partition code groups`,
+        `missing printer for ${lang}. cannot partition code groups`
       );
     }
-    const outputSymbol = `mdp_group_${groupName}_${getRandomString()}`;
+    const outputSymbol = EXEC_GROUP_PREFIX; // `${EXEC_GROUP_PREFIX}_${groupName}_${EXEC_GROUP_POSTFIX}`;
     const langEmitSym = langPrinter.print(outputSymbol);
     const nextChunk = `${langEmitSym}${content}${langEmitSym}`;
     file.content = i === 0 ? nextChunk : `${file.content}${nextChunk}`;
@@ -203,20 +216,34 @@ export async function runCodeGroup([
   groupName = "default",
   cmds,
 ]: CmdExecutionTuple) {
-  if (cmds.length === 1) return runCodeSnippet(cmds[0]);
   const { exec, outputDelimiters } = createGroupedFenceExecution({
     cmds,
     groupName,
   });
-  const result = await runCodeSnippet({
-    ...exec,
-    // writeCmdStderr: chunkStream.write,
-    // writeCmdStdout: chunkStream.write,
-  });
-  const outputs = extractNeedleWrappedChunks(
-    new TextDecoder().decode(result.output),
-    outputDelimiters,
+  const {
+    stream: fencedOutputStream,
+    terminate: terminateStream,
+  } = createFenceBlockStream(
+    new RegExp(EXEC_GROUP_PREFIX)
+    // new RegExp(`${EXEC_GROUP_PREFIX}[a-zA-Z_]+?${EXEC_GROUP_POSTFIX}`)
   );
+  const writer = writerFromStreamWriter(
+    fencedOutputStream.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>
+  );
+  const running = runCodeSnippet({
+    ...exec,
+    outStream: writer,
+    errStream: writer,
+  }).finally(terminateStream);
+  const outputs: string[] = [];
+  for await (const chunk of fencedOutputStream.readable) {
+    outputs.push(chunk);
+  }
+  const result = await running;
+  // const outputs = extractNeedleWrappedChunks(
+  //   new TextDecoder().decode(result.output),
+  //   outputDelimiters
+  // );
   return {
     ...result,
     cmds,

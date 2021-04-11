@@ -1,8 +1,12 @@
 # markdown_player
 
-## warning - alpha software, do not use
-
 ▶️ Executable markdown files.
+
+```ts
+const fileType = "markdown";
+const description = `Runs code fences in a ${fileType} file.`;
+console.log(description);
+```
 
 Runs code fences in a markdown file.
 

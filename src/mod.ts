@@ -31,7 +31,7 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
   const fences = getCodeFences(ast);
   const runnable = exec.config.getRunnable(fences);
   const groups = exec.cmdsByGroup(runnable);
-  const runs = await pMap(groups, (gTuple) => exec.runCodeGroup(gTuple), {
+  const runs = await pMap(groups, exec.runCodeGroup, {
     concurrency: options?.concurrency || 1,
   });
   return { ast, runs };
