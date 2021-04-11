@@ -34,5 +34,10 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
   const runs = await pMap(groups, exec.runCodeGroup, {
     concurrency: options?.concurrency || 1,
   });
+  runs.forEach((run) => {
+    run.outputs.forEach((output) => {
+      console.log(output);
+    });
+  });
   return { ast, runs };
 }

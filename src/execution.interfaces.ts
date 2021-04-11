@@ -19,7 +19,7 @@ export type CmdExecution = {
 export type ExecutionConfig = CmdExecution;
 export type ExecutionConfigCreator = (
   node: MDAST,
-  metaExecutionConfig: RecursivePartial<ExecutionConfig>
+  metaExecutionConfig: RecursivePartial<ExecutionConfig>,
 ) => ExecutionConfig;
 
 export type CmdExecutionTuple = [string | undefined, CmdExecution[]];

@@ -2,8 +2,8 @@ export * as markdown from "https://deno.land/x/markdown@v2.0.0/mod.ts";
 export * as yaml from "https://deno.land/std@0.92.0/encoding/yaml.ts";
 export * as path from "https://deno.land/std@0.92.0/path/mod.ts";
 export {
-  writerFromStreamWriter,
   StringWriter,
+  writerFromStreamWriter,
 } from "https://deno.land/std@0.92.0/io/mod.ts";
 export * as zod from "https://deno.land/x/zod@v3.0.0-alpha.33/mod.ts";
 import toMarkdown_ from "https://esm.sh/mdast-util-to-markdown";

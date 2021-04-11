@@ -1,4 +1,4 @@
-import { MDAST, yaml, zod, writerFromStreamWriter } from "./3p.ts";
+import { MDAST, writerFromStreamWriter, yaml, zod } from "./3p.ts";
 import {
   DEFAULT_LANGUAGE_CODEGENERATORS,
   DEFAULT_LANGUAGE_EXECUTORS,
@@ -10,16 +10,12 @@ import type {
   ExecutionConfig,
   ExecutionConfigCreator,
 } from "./execution.interfaces.ts";
-import concatStreams from "./concat_streams.ts";
-import { getString as getRandomString } from "./random.ts";
-import { extractNeedleWrappedChunks } from "./haystack.ts";
 import { createFenceBlockStream } from "./create-fence-block-stream.ts";
 
 export * from "./execution.defaults.ts";
 export * from "./execution.interfaces.ts";
 
-const EXEC_GROUP_PREFIX = `@@mdpg_pre`;
-const EXEC_GROUP_POSTFIX = `@@mdpg_post`;
+const EXEC_GROUP_DELIM = `@@mdp_delim@@`;
 
 const codeFenceExecConfigSchema = zod
   .object({
@@ -148,7 +144,6 @@ export async function runCodeSnippet(
       stderr: "piped",
     });
     proc = procRun;
-    // const outputP = concatStreams(procRun.stdout, procRun.stderr);
     const [_, __, status] = await Promise.all([
       Deno.copy(procRun.stdout, outStream),
       Deno.copy(procRun.stderr, errStream),
@@ -203,7 +198,7 @@ function createGroupedFenceExecution({
         `missing printer for ${lang}. cannot partition code groups`
       );
     }
-    const outputSymbol = EXEC_GROUP_PREFIX; // `${EXEC_GROUP_PREFIX}_${groupName}_${EXEC_GROUP_POSTFIX}`;
+    const outputSymbol = EXEC_GROUP_DELIM;
     const langEmitSym = langPrinter.print(outputSymbol);
     const nextChunk = `${langEmitSym}${content}${langEmitSym}`;
     file.content = i === 0 ? nextChunk : `${file.content}${nextChunk}`;
@@ -216,17 +211,14 @@ export async function runCodeGroup([
   groupName = "default",
   cmds,
 ]: CmdExecutionTuple) {
-  const { exec, outputDelimiters } = createGroupedFenceExecution({
+  const { exec } = createGroupedFenceExecution({
     cmds,
     groupName,
   });
   const {
     stream: fencedOutputStream,
     terminate: terminateStream,
-  } = createFenceBlockStream(
-    new RegExp(EXEC_GROUP_PREFIX)
-    // new RegExp(`${EXEC_GROUP_PREFIX}[a-zA-Z_]+?${EXEC_GROUP_POSTFIX}`)
-  );
+  } = createFenceBlockStream(new RegExp(EXEC_GROUP_DELIM));
   const writer = writerFromStreamWriter(
     fencedOutputStream.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>
   );
@@ -239,13 +231,8 @@ export async function runCodeGroup([
   for await (const chunk of fencedOutputStream.readable) {
     outputs.push(chunk);
   }
-  const result = await running;
-  // const outputs = extractNeedleWrappedChunks(
-  //   new TextDecoder().decode(result.output),
-  //   outputDelimiters
-  // );
   return {
-    ...result,
+    ...(await running),
     cmds,
     outputs,
   };

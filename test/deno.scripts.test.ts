@@ -10,7 +10,7 @@ Deno.test({
     const fixtureText = Deno.readTextFileSync(fixtureFilename);
     const fixtureAst = fromMarkdown(fixtureText);
     const [caseSleepEcho] = await exec.config.getRunnable(
-      getCodeFences(fixtureAst)
+      getCodeFences(fixtureAst),
     );
     const cases = [[caseSleepEcho, `{"x":2}\n`] as const];
     for (const [config, expected] of cases) {
