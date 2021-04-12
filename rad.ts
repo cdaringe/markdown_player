@@ -1,4 +1,4 @@
-import type { Task, Tasks } from "https://deno.land/x/rad@v6.3.6/src/mod.ts";
+import { patchInstallVersion, Task, Tasks } from "./.rad/mod.ts";
 
 const clean: Task = `rm -f .tmp*`;
 const lint: Task = `deno lint --unstable`;
@@ -17,6 +17,7 @@ export const tasks: Tasks = {
   _test,
   formatCheck,
   check,
+  patchInstallVersion,
   ...{ clean, c: clean },
   ...{ lint, l: lint },
   ...{ test, t: test },

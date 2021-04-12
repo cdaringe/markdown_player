@@ -9,9 +9,10 @@
       "request": "launch",
       "type": "pwa-node",
       "program": "src/bin.ts",
+      "args": ["readme.md"],
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "deno",
-      "runtimeArgs": ["run", "--unstable", "--inspect", "--allow-all"],
+      "runtimeArgs": ["run", "--unstable", "--inspect-brk", "--allow-all"],
       "attachSimplePort": 9229
     },
     {

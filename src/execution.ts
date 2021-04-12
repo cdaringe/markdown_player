@@ -19,6 +19,7 @@ const EXEC_GROUP_DELIM = `@@mdp_delim@@`;
 
 const codeFenceExecConfigSchema = zod
   .object({
+    output: zod.boolean().optional(),
     group: zod
       .string()
       .refine((s) => s.match(/[a-zA-Z_]+/))
@@ -43,7 +44,7 @@ export const config = {
     function asserts(v: unknown): asserts v {
       if (!v) {
         throw new Error(
-          `no execution provided in codefence, and no default execution for block of ${node.lang}`
+          `no execution provided in codefence, and no default execution for block of ${node.lang}`,
         );
       }
     }
@@ -64,12 +65,10 @@ export const config = {
       args,
       node,
     };
-    const config = cmd
-      ? (mdConfig as ExecutionConfig)
-      : (() => {
-          asserts(createFromDefaults);
-          return createFromDefaults(node, mdConfig);
-        })();
+    const config = cmd ? (mdConfig as ExecutionConfig) : (() => {
+      asserts(createFromDefaults);
+      return createFromDefaults(node, mdConfig);
+    })();
     // console.log(config);
     return config;
   },
@@ -80,8 +79,7 @@ export const config = {
           ? codeFenceExecConfigSchema.parse(yaml.parse(node.meta))
           : {};
         const isSkipping = !!metaExecution.skipRun;
-        const shouldAttemptExecution =
-          !isSkipping &&
+        const shouldAttemptExecution = !isSkipping &&
           !!(metaExecution.cmd || DEFAULT_LANGUAGE_EXECUTORS[node.lang]);
         return shouldAttemptExecution
           ? config.ofMdNode(node, metaExecution)
@@ -111,7 +109,7 @@ export function cmdsByGroup(cmds: ExecutionConfig[]): CmdExecutionTuple[] {
 }
 
 export async function runCodeSnippet(
-  opts: ExecutionConfig
+  opts: ExecutionConfig,
 ): Promise<CmdResult> {
   const {
     cmd,
@@ -135,13 +133,16 @@ export async function runCodeSnippet(
     const procRun = Deno.run({
       cmd: [
         cmd,
-        ...args.map((v: string) =>
-          v === executionArgSymbol ? fileContent : v
-        ),
+        ...args.map((v: string) => v === executionArgSymbol ? fileContent : v),
       ],
       stdin: "inherit",
       stdout: "piped",
       stderr: "piped",
+      env: {
+        ...Deno.env.toObject(),
+        // colors do not serialize well into markdown, due to shell escape codes
+        NO_COLOR: "1",
+      },
     });
     proc = procRun;
     const [_, __, status] = await Promise.all([
@@ -160,7 +161,7 @@ export async function runCodeSnippet(
       [
         `failed to run process ${[cmd, ...args].join(" ")}\n\n`,
         `\t${err?.stack || err}`,
-      ].join("")
+      ].join(""),
     );
     throw err;
   } finally {
@@ -183,7 +184,7 @@ function createGroupedFenceExecution({
   const cmd0File = cmd0.file;
   if (!cmd0File) {
     throw new Error(
-      `grouped code must be flushed to a cmd0File, but no cmd0File content present`
+      `grouped code must be flushed to a cmd0File, but no cmd0File content present`,
     );
   }
   const file = { ...cmd0File };
@@ -195,7 +196,7 @@ function createGroupedFenceExecution({
     const langPrinter = DEFAULT_LANGUAGE_CODEGENERATORS[lang];
     if (!langPrinter) {
       throw new Error(
-        `missing printer for ${lang}. cannot partition code groups`
+        `missing printer for ${lang}. cannot partition code groups`,
       );
     }
     const outputSymbol = EXEC_GROUP_DELIM;
@@ -220,7 +221,9 @@ export async function runCodeGroup([
     terminate: terminateStream,
   } = createFenceBlockStream(new RegExp(EXEC_GROUP_DELIM));
   const writer = writerFromStreamWriter(
-    fencedOutputStream.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>
+    fencedOutputStream.writable.getWriter() as WritableStreamDefaultWriter<
+      Uint8Array
+    >,
   );
   const running = runCodeSnippet({
     ...exec,

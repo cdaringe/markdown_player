@@ -1,6 +1,8 @@
-import { fromMarkdown, MDAST, mdAstVisit, pMap } from "./3p.ts";
+import { fromMarkdown, MDAST, mdAstVisit, pMap, toMarkdown } from "./3p.ts";
+import { createOutputNode } from "./ast.ts";
 import * as exec from "./execution.ts";
 export { exec };
+import { zip } from "./iter.ts";
 
 export type RunConfig = {
   languageExecutors: exec.LanguageExecutors;
@@ -12,6 +14,10 @@ export type PlayFileOptions = {
    * Set to value >1 if code blocks are safe to be run independently
    */
   concurrency?: number;
+  /**
+   * Attach or update a text markdown with the results of a block
+   */
+  appendOutput?: boolean;
 };
 
 export function getNodes(ast: MDAST, type: string) {
@@ -34,10 +40,32 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
   const runs = await pMap(groups, exec.runCodeGroup, {
     concurrency: options?.concurrency || 1,
   });
-  runs.forEach((run) => {
-    run.outputs.forEach((output) => {
+  const isAppendingOutput = !!options?.appendOutput;
+  const nextAst: MDAST | null = isAppendingOutput ? { ...ast } : null;
+  runs.forEach(({ cmds, outputs }) => {
+    zip(cmds, outputs).forEach(([cmd, output], i) => {
+      const trimmedOutput = output.trim();
+      if (isAppendingOutput && trimmedOutput) {
+        if (!nextAst) throw new Error("ast missing");
+        const cmdIdx = nextAst.children.findIndex((n) => n === cmd.node);
+        if (cmdIdx < 0) throw new Error("could not find cmd code block :(");
+        const outputIdx = cmdIdx + 1;
+        const outNode = nextAst.children[outputIdx] as MDAST | undefined;
+        if (outNode?.lang === "txt" && outNode?.meta?.match(/output:\s+true/)) {
+          outNode.value = output;
+        } else {
+          nextAst.children.splice(
+            outputIdx,
+            0,
+            createOutputNode(trimmedOutput),
+          );
+        }
+      }
       console.log(output);
     });
   });
+  if (isAppendingOutput) {
+    await Deno.writeTextFile(filename, toMarkdown(nextAst!));
+  }
   return { ast, runs };
 }

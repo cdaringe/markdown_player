@@ -11,6 +11,7 @@ import fromMarkdown_ from "https://esm.sh/mdast-util-from-markdown";
 import mdAstVisit_ from "https://esm.sh/unist-util-visit";
 export { default as pMap } from "https://deno.land/x/promise_fns@v1.5.0/src/map.ts";
 export type MDAST = {
+  children: MDAST[];
   type: string;
   lang: string;
   meta: string;
@@ -20,3 +21,4 @@ export type MDAST = {
 export const toMarkdown = (toMarkdown_ as unknown) as (ast: MDAST) => string;
 export const fromMarkdown = (fromMarkdown_ as unknown) as (md: string) => MDAST;
 export const mdAstVisit = mdAstVisit_;
+export { parse as parseFlags } from "https://deno.land/std@0.92.0/flags/mod.ts";
