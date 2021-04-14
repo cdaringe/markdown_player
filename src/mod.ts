@@ -43,7 +43,7 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
   const isAppendingOutput = !!options?.appendOutput;
   const nextAst: MDAST | null = isAppendingOutput ? { ...ast } : null;
   runs.forEach(({ cmds, outputs }) => {
-    zip(cmds, outputs).forEach(([cmd, output], i) => {
+    zip(cmds, outputs).forEach(([cmd, output]) => {
       const trimmedOutput = output.trim();
       if (isAppendingOutput && trimmedOutput) {
         if (!nextAst) throw new Error("ast missing");

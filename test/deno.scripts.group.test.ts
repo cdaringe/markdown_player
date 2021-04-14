@@ -1,5 +1,4 @@
 import { assertEquals } from "./3p/asserts.ts";
-import { fromMarkdown } from "../src/3p.ts";
 import { playFile } from "../src/mod.ts";
 import { relative } from "./fixture/setup.ts";
 

@@ -174,7 +174,6 @@ export type CmdResult = { statusCode: number };
 
 function createGroupedFenceExecution({
   cmds,
-  groupName,
 }: {
   cmds: CmdExecution[];
   groupName: string;

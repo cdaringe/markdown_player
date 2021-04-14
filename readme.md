@@ -32,10 +32,11 @@ The above output was auto-added to this document by the `--appendOutput` flag!
 
 The following are written in a narrative style to demonstrate functionality.
 
-### Share execution environments
+### Share execution context
 
 Sharing variables can be achieved by adding a `{group: name}` to the codeblock
-meta.
+meta. All items in a `group` eventually get run from a single file, where all
+blocks are combined into a single file.
 
 Math is important. Learn math! Consider this function:
 
