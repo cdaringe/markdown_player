@@ -78,7 +78,7 @@ export const config = {
         const metaExecution = node.meta
           ? codeFenceExecConfigSchema.parse(yaml.parse(node.meta))
           : {};
-        const isSkipping = !!metaExecution.skipRun;
+        const isSkipping = !!metaExecution.skipRun || !!metaExecution.output;
         const shouldAttemptExecution = !isSkipping &&
           !!(metaExecution.cmd || DEFAULT_LANGUAGE_EXECUTORS[node.lang]);
         return shouldAttemptExecution
@@ -153,7 +153,13 @@ export async function runCodeSnippet(
     procRun.stdout.close();
     procRun.stderr.close();
     if (status.code) {
-      throw new Error(`command failed, exit code: ${status.code}`);
+      throw new Error(
+        [
+          `failed to run code block:`,
+          JSON.stringify(cmd, null, 2),
+          `exit code: ${status.code}`,
+        ].join("\n"),
+      );
     }
     return { statusCode: status.code };
   } catch (err) {
@@ -190,7 +196,19 @@ function createGroupedFenceExecution({
   const exec: ExecutionConfig = { ...cmd0, file };
   const outputDelimiters = cmds.map((cmd, i) => {
     const content = cmd.file?.content;
-    if (!content) throw new Error("cannot group. no file content found");
+    if (!content) {
+      if (cmds.length > 1) {
+        throw new Error(
+          [
+            `no file content and command is part of a group`,
+            `execution of ${cmds.length} code fences. cannot execute`,
+            `a command in a group of commands if the cmd cannot be serialized`,
+            `to disk`,
+          ].join(" "),
+        );
+      }
+      return null;
+    }
     const lang = cmd.node.lang;
     const langPrinter = DEFAULT_LANGUAGE_CODEGENERATORS[lang];
     if (!langPrinter) {
@@ -215,29 +233,28 @@ export async function runCodeGroup([
     cmds,
     groupName,
   });
-  const {
-    stream: fencedOutputStream,
-    terminate: terminateStream,
-  } = createFenceBlockStream(new RegExp(EXEC_GROUP_DELIM));
+  const { stream, terminate } = createFenceBlockStream(
+    new RegExp(EXEC_GROUP_DELIM),
+  );
   const writer = writerFromStreamWriter(
-    fencedOutputStream.writable.getWriter() as WritableStreamDefaultWriter<
-      Uint8Array
-    >,
+    stream.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>,
   );
   const running = runCodeSnippet({
     ...exec,
     outStream: writer,
     errStream: writer,
-  }).finally(terminateStream);
+  }).finally(terminate);
   const outputs: string[] = [];
-  for await (const chunk of fencedOutputStream.readable) {
-    outputs.push(chunk);
-  }
-  return {
-    ...(await running),
-    cmds,
-    outputs,
-  };
+  for await (const chunk of stream.readable) outputs.push(chunk);
+  await running;
+  const result = cmds.map((cmd, i) => {
+    const output = outputs[i];
+    if (output === undefined || output === null) {
+      throw new Error(`unable to find output for cmd ${JSON.stringify(cmd)}`);
+    }
+    return { cmd, output };
+  });
+  return result;
 }
 
 export type RunnableSnippetCodeFenceMeta = {

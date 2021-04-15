@@ -11,7 +11,7 @@ const check: Task = {
   dependsOn: [clean, formatCheck, lint, test],
   dependsOnSerial: true,
 };
-const run: Task = `deno run -A --unstable src/bin.ts readme.md`;
+const run: Task = `deno run -A --unstable src/bin.ts readme.md --appendOutput`;
 
 export const tasks: Tasks = {
   _test,

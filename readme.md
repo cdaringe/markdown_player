@@ -4,33 +4,88 @@
 
 Write markdown documentation, _run_ markdown documentation!
 
-## demo
+## Install
 
-- Write code in codeblocks
+Install the CLI:
+
+`deno install --unstable -f -A -n markdown_player "https://deno.land/x/markdown_player@v1.0.0/src/bin.ts"`
+
+Install the `deno` library:
+
+```ts {skipRun: true}
+import * as markdownPlayer from "https://deno.land/x/markdown_player@v1.0.0/src/mod.ts";
+markdownPlayer.playFile("readme.md");
+```
+
+## How it works
+
+- Reads a markdown file
+- Parses all
+  [fenced code blocks](https://www.markdownguide.org/extended-syntax/#fenced-code-blocks)
+- Executes each code fence in an independent or shared process
+- Captures and re-emits command output!
+
+## Code
+
+## Demo
+
+- Write code in code blocks
 - Run `markdown_player /path/to/file.md --appendOutput`
 - Observe the output
 
 ```ts
+import { getEmojiByName } from "https://deno.land/x/getmoji@1.2.4/mod.ts";
 const fileType = "markdown";
-const description = `Runs code fences in a ${fileType} file.`;
-console.log(description);
+const description = `Runs code fences in a ${fileType} file`;
+console.log(`${description} ${await getEmojiByName("pizza")}`);
 ```
 
 ```txt {skipRun: true, output: true}
-Runs code fences in a markdown file.
+Runs code fences in a markdown file 🍕
 ```
 
-The above output was auto-added to this document by the `--appendOutput` flag!
+The above output sample was auto written to this document by using the
+`--appendOutput` flag!
 
-## features
+## Features
 
-- share execution environments between codeblocks
-- configure codeblocks to be run with custom commands
-- write codeblocks to disk, permanently or with auto-removal
+- share execution environments between code blocks
+- configure code blocks to be run with custom commands
+- write code blocks to disk, permanently or with auto-removal
 
-## examples
+## API
 
-The following are written in a narrative style to demonstrate functionality.
+Code fences can be configured via single line yaml in the meta section. E.g.:
+
+````txt
+```your-lang META_SECTION
+...
+````
+
+| meta-option     | type      | description                                                                                                  |
+| --------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| output          | boolean?  | Signify that this block is for capturing stdio from the above code block. Generally considered a private API |
+| group           | string?   | Run any same named group code blocks in the same file                                                        |
+| skipRun         | boolean?  | Do not execute this code block                                                                               |
+| cmd             | string?   | Executable to run                                                                                            |
+| args            | string[]? | Args to pass to the executable. Use the string "$ARG" to get the contents of the code fence                  |
+| file            | object?   | Flush the code block to a file then execute it. This is the default operation mode.                          |
+| file.name       | string?   | Name the file. Otherwise, a random filename is generated                                                     |
+| file.autoRemove | boolean?  | Set to false to keep the file. Otherwise, it is deleted by default                                           |
+
+```js {cmd: node, args: ["--eval", $ARG]}
+// no file is written
+console.log(123);
+```
+
+```js {file: {name: 456-demo.js, autoRemove: false}, cmd: node}
+console.log(456);
+```
+
+You can verify your compact YAML syntax using
+https://yaml-online-parser.appspot.com/.
+
+## Examples
 
 ### Share execution context
 
@@ -64,56 +119,6 @@ console.log(square(twoSquared));
 ```txt {skipRun: true, output: true}
 16
 ```
-
-Wow! Sharing variables is great!
-
-## why?
-
-Documentation or demonstration? Which is more powerful for helping users? Why
-settle for just one? What if you could deliver both, from the exact same
-markdown content?
-
-Turn your markdown _into_ an application!
-
----
-
-```sh {skipRun: true}
-deno install -A --unstable ...
-```
-
-## api
-
-`playFile(...)`
-
-## configuration
-
-### codefences
-
-Codef ences can be configure via compact yaml in the codefence meta section.
-
-markdown codefences have the form:
-`<TRIPLE_BACKTICK><LANG><META><BODY><TRIPLEBACKTICK>`
-
-Example:
-
-delete me
-
-```ts {file: {name: cool file.ts, autoRemove: true}, cmd: deno, args: [eval, $ARG]}
-console.log(123);
-```
-
-```txt {skipRun: true, output: true}
-123
-```
-
-````md
-```ts {filename: cool file.ts, cmd: deno, args: [eval, $ARG]}
-console.log(123);
-```
-````
-
-You can verify your compact YAML syntax using
-https://yaml-online-parser.appspot.com/.
 
 ## FAQ
 

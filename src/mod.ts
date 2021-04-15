@@ -42,8 +42,8 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
   });
   const isAppendingOutput = !!options?.appendOutput;
   const nextAst: MDAST | null = isAppendingOutput ? { ...ast } : null;
-  runs.forEach(({ cmds, outputs }) => {
-    zip(cmds, outputs).forEach(([cmd, output]) => {
+  runs.forEach((run) =>
+    run.forEach(({ cmd, output }) => {
       const trimmedOutput = output.trim();
       if (isAppendingOutput && trimmedOutput) {
         if (!nextAst) throw new Error("ast missing");
@@ -57,13 +57,13 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
           nextAst.children.splice(
             outputIdx,
             0,
-            createOutputNode(trimmedOutput),
+            createOutputNode(trimmedOutput)
           );
         }
       }
       console.log(output);
-    });
-  });
+    })
+  );
   if (isAppendingOutput) {
     await Deno.writeTextFile(filename, toMarkdown(nextAst!));
   }

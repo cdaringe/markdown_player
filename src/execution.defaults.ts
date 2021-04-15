@@ -44,8 +44,13 @@ const tsCodegen: Codegen = {
 const shCodegen: Codegen = {
   print: (s) => `echo ${s}`,
 };
+const jsCodegen: Codegen = {
+  print: (s) => `console.log("${s}");`,
+};
 export const DEFAULT_LANGUAGE_CODEGENERATORS: LanguageCodegen = {
   ts: tsCodegen,
   typescript: tsCodegen,
   sh: shCodegen,
+  js: jsCodegen,
+  javascript: jsCodegen,
 };

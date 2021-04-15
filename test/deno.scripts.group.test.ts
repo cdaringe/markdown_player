@@ -10,13 +10,9 @@ Deno.test({
   async fn() {
     const res = await playFile(fixtureFilename);
     const run0 = res.runs[0];
-    if ("outputs" in run0) {
-      assertEquals(run0.outputs, [
-        `what's the meaning of life, "dudeskie"?\n`,
-        `The meaning is 42\n`,
-      ]);
-    } else {
-      throw new Error("expected outputs for each chunk");
-    }
+    assertEquals(
+      run0.map(({ output }) => output),
+      [`what's the meaning of life, "dudeskie"?\n`, `The meaning is 42\n`]
+    );
   },
 });
