@@ -28,7 +28,6 @@ Deno.test({
       caseEmptyMeta,
       createShExec(caseEmptyMeta.node, {
         cmd: "sh",
-        args: ["-c", ""],
       }),
     );
   },
@@ -68,7 +67,7 @@ Deno.test({
     };
     assertEquals(expected, {
       cmd: "cmd",
-      args: ["cmd", "arg0", "--flag"],
+      args: ["arg0", "--flag"],
       file: {
         name: "/path/to/my username/file.ts",
         content: "",

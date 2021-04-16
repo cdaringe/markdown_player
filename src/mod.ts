@@ -2,7 +2,6 @@ import { fromMarkdown, MDAST, mdAstVisit, pMap, toMarkdown } from "./3p.ts";
 import { createOutputNode } from "./ast.ts";
 import * as exec from "./execution.ts";
 export { exec };
-import { zip } from "./iter.ts";
 
 export type RunConfig = {
   languageExecutors: exec.LanguageExecutors;
@@ -37,9 +36,16 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
   const fences = getCodeFences(ast);
   const runnable = exec.config.getRunnable(fences);
   const groups = exec.cmdsByGroup(runnable);
-  const runs = await pMap(groups, exec.runCodeGroup, {
-    concurrency: options?.concurrency || 1,
-  });
+  const runs = await pMap(
+    groups,
+    ([name, cmds]) =>
+      cmds.length === 1
+        ? exec.runCodeBlock(cmds[0]).then((r) => [r])
+        : exec.runCodeBlockGroup([name, cmds]),
+    {
+      concurrency: options?.concurrency || 1,
+    },
+  );
   const isAppendingOutput = !!options?.appendOutput;
   const nextAst: MDAST | null = isAppendingOutput ? { ...ast } : null;
   runs.forEach((run) =>
@@ -52,12 +58,12 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
         const outputIdx = cmdIdx + 1;
         const outNode = nextAst.children[outputIdx] as MDAST | undefined;
         if (outNode?.lang === "txt" && outNode?.meta?.match(/output:\s+true/)) {
-          outNode.value = output;
+          outNode.value = trimmedOutput;
         } else {
           nextAst.children.splice(
             outputIdx,
             0,
-            createOutputNode(trimmedOutput)
+            createOutputNode(trimmedOutput),
           );
         }
       }

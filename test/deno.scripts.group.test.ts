@@ -12,7 +12,7 @@ Deno.test({
     const run0 = res.runs[0];
     assertEquals(
       run0.map(({ output }) => output),
-      [`what's the meaning of life, "dudeskie"?\n`, `The meaning is 42\n`]
+      [`what's the meaning of life, "dudeskie"?\n`, `The meaning is 42\n`],
     );
   },
 });

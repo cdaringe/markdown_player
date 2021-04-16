@@ -1,4 +1,10 @@
-import { MDAST, writerFromStreamWriter, yaml, zod } from "./3p.ts";
+import {
+  MDAST,
+  StringWriter,
+  writerFromStreamWriter,
+  yaml,
+  zod,
+} from "./3p.ts";
 import {
   DEFAULT_LANGUAGE_CODEGENERATORS,
   DEFAULT_LANGUAGE_EXECUTORS,
@@ -17,24 +23,22 @@ export * from "./execution.interfaces.ts";
 
 const EXEC_GROUP_DELIM = `@@mdp_delim@@`;
 
-const codeFenceExecConfigSchema = zod
-  .object({
-    output: zod.boolean().optional(),
-    group: zod
-      .string()
-      .refine((s) => s.match(/[a-zA-Z_]+/))
-      .optional(),
-    skipRun: zod.boolean().optional(),
-    cmd: zod.string().optional(),
-    file: zod
-      .object({
-        name: zod.string(),
-        autoRemove: zod.boolean().optional(),
-      })
-      .optional(),
-    args: zod.array(zod.string()).optional(),
-  })
-  .strict();
+const codeFenceExecConfigSchema = zod.object({
+  output: zod.boolean().optional(),
+  group: zod
+    .string()
+    .refine((s) => s.match(/[a-zA-Z_]+/))
+    .optional(),
+  skipRun: zod.boolean().optional(),
+  cmd: zod.string().optional(),
+  file: zod
+    .object({
+      name: zod.string(),
+      autoRemove: zod.boolean().optional(),
+    })
+    .optional(),
+  args: zod.array(zod.string()).optional(),
+});
 export type CodeFenceConfig = zod.infer<typeof codeFenceExecConfigSchema>;
 
 export const config = {
@@ -52,7 +56,7 @@ export const config = {
       asserts(createFromDefaults);
       return createFromDefaults(node, {});
     }
-    const { file, args, cmd, skipRun } = schema;
+    const { file, args, cmd, skipRun, group } = schema;
     const { name: filename, autoRemove = false } = file || {};
     if (skipRun) {
       throw new Error(`illegal execution config parse of skipped block`);
@@ -64,12 +68,16 @@ export const config = {
         : undefined,
       args,
       node,
+      group,
     };
-    const config = cmd ? (mdConfig as ExecutionConfig) : (() => {
-      asserts(createFromDefaults);
-      return createFromDefaults(node, mdConfig);
-    })();
-    // console.log(config);
+    const config = cmd && createFromDefaults
+      ? createFromDefaults(node, mdConfig)
+      : cmd
+      ? (mdConfig as ExecutionConfig)
+      : (() => {
+        asserts(createFromDefaults);
+        return createFromDefaults(node, mdConfig);
+      })();
     return config;
   },
   getRunnable(nodes: MDAST[]) {
@@ -95,12 +103,12 @@ export const config = {
 };
 
 export function cmdsByGroup(cmds: ExecutionConfig[]): CmdExecutionTuple[] {
-  return cmds.reduce((groupTuples, exec) => {
+  return cmds.reduce((groupTuples, exec, i) => {
     const groupTuple = groupTuples.find(([name]) => name === exec.group);
-    if (!groupTuple) {
+    if (!exec.group || !groupTuple) {
       return [
         ...(groupTuples || []),
-        [exec.group, [exec]] as CmdExecutionTuple,
+        [exec.group || `g${i}`, [exec]] as CmdExecutionTuple,
       ];
     }
     groupTuple[1].push(exec);
@@ -108,9 +116,7 @@ export function cmdsByGroup(cmds: ExecutionConfig[]): CmdExecutionTuple[] {
   }, [] as CmdExecutionTuple[]);
 }
 
-export async function runCodeSnippet(
-  opts: ExecutionConfig,
-): Promise<CmdResult> {
+export async function runCodeSnippet(opts: ExecutionConfig) {
   const {
     cmd,
     args = [],
@@ -127,14 +133,14 @@ export async function runCodeSnippet(
       throw new Error(`failed to write file ${filename}: ${err}`);
     }
   }
+  const finalArgs = args.map((v: string) =>
+    v === executionArgSymbol ? fileContent || opts.node.value || fileContent : v
+  );
   // console.log([cmd, ...args]);
   let proc: Deno.Process | null = null;
   try {
     const procRun = Deno.run({
-      cmd: [
-        cmd,
-        ...args.map((v: string) => v === executionArgSymbol ? fileContent : v),
-      ],
+      cmd: [cmd, ...finalArgs],
       stdin: "inherit",
       stdout: "piped",
       stderr: "piped",
@@ -161,7 +167,6 @@ export async function runCodeSnippet(
         ].join("\n"),
       );
     }
-    return { statusCode: status.code };
   } catch (err) {
     console.error(
       [
@@ -176,7 +181,7 @@ export async function runCodeSnippet(
   }
 }
 
-export type CmdResult = { statusCode: number };
+export type CmdResult = { cmd: CmdExecution; output: string };
 
 function createGroupedFenceExecution({
   cmds,
@@ -186,28 +191,35 @@ function createGroupedFenceExecution({
 }) {
   const [cmd0] = cmds;
   if (!cmd0) throw new Error("missing cmd in group");
+  if (cmds.length <= 1) throw new Error(`cmd groups must have >1 cmd`);
   const cmd0File = cmd0.file;
-  if (!cmd0File) {
+  const isFileExecutionRequired = cmds.length > 1;
+  if (!cmd0File && isFileExecutionRequired) {
     throw new Error(
-      `grouped code must be flushed to a cmd0File, but no cmd0File content present`,
+      `grouped code must be flushed to a file, but no file content present`,
     );
   }
-  const file = { ...cmd0File };
+  const file = cmd0File ? { ...cmd0File } : undefined;
+  if (!file) {
+    throw new Error(
+      [
+        `the first command the the group must execute from a file. received:`,
+        JSON.stringify(cmd0, null, 2),
+      ].join("\n"),
+    );
+  }
   const exec: ExecutionConfig = { ...cmd0, file };
   const outputDelimiters = cmds.map((cmd, i) => {
     const content = cmd.file?.content;
     if (!content) {
-      if (cmds.length > 1) {
-        throw new Error(
-          [
-            `no file content and command is part of a group`,
-            `execution of ${cmds.length} code fences. cannot execute`,
-            `a command in a group of commands if the cmd cannot be serialized`,
-            `to disk`,
-          ].join(" "),
-        );
-      }
-      return null;
+      throw new Error(
+        [
+          `no file content and command is part of a group`,
+          `execution of ${cmds.length} code fences. cannot execute`,
+          `a command in a group of commands if the cmd cannot be serialized`,
+          `to disk`,
+        ].join(" "),
+      );
     }
     const lang = cmd.node.lang;
     const langPrinter = DEFAULT_LANGUAGE_CODEGENERATORS[lang];
@@ -225,7 +237,21 @@ function createGroupedFenceExecution({
   return { exec, outputDelimiters };
 }
 
-export async function runCodeGroup([
+export async function runCodeBlock(cmd: CmdExecution): Promise<CmdResult> {
+  const writer = new StringWriter();
+  await runCodeSnippet({
+    ...cmd,
+    outStream: writer,
+    errStream: writer,
+  });
+  const output = writer.toString();
+  return {
+    output,
+    cmd,
+  };
+}
+
+export async function runCodeBlockGroup([
   groupName = "default",
   cmds,
 ]: CmdExecutionTuple) {
@@ -252,7 +278,7 @@ export async function runCodeGroup([
     if (output === undefined || output === null) {
       throw new Error(`unable to find output for cmd ${JSON.stringify(cmd)}`);
     }
-    return { cmd, output };
+    return { cmd, output } as CmdResult;
   });
   return result;
 }

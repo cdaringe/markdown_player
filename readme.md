@@ -25,9 +25,7 @@ markdownPlayer.playFile("readme.md");
 - Executes each code fence in an independent or shared process
 - Captures and re-emits command output!
 
-## Code
-
-## Demo
+## Preview
 
 - Write code in code blocks
 - Run `markdown_player /path/to/file.md --appendOutput`
@@ -44,48 +42,75 @@ console.log(`${description} ${await getEmojiByName("pizza")}`);
 Runs code fences in a markdown file 🍕
 ```
 
-The above output sample was auto written to this document by using the
-`--appendOutput` flag!
+The above output was auto written to this document by using the `--appendOutput`
+flag!
 
 ## Features
 
 - share execution environments between code blocks
 - configure code blocks to be run with custom commands
-- write code blocks to disk, permanently or with auto-removal
+- optionally write code blocks to files, with support for optional auto-removal
 
 ## API
 
-Code fences can be configured via single line yaml in the meta section. E.g.:
+Code fences can be configured via single line yaml in the meta section. Consider
+the following markdown meta:
 
-````txt
-```your-lang META_SECTION
-...
-````
+`` ```bash {file: {name: greeting.sh}}``
 
-| meta-option     | type      | description                                                                                                  |
-| --------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
-| output          | boolean?  | Signify that this block is for capturing stdio from the above code block. Generally considered a private API |
-| group           | string?   | Run any same named group code blocks in the same file                                                        |
-| skipRun         | boolean?  | Do not execute this code block                                                                               |
-| cmd             | string?   | Executable to run                                                                                            |
-| args            | string[]? | Args to pass to the executable. Use the string "$ARG" to get the contents of the code fence                  |
-| file            | object?   | Flush the code block to a file then execute it. This is the default operation mode.                          |
-| file.name       | string?   | Name the file. Otherwise, a random filename is generated                                                     |
-| file.autoRemove | boolean?  | Set to false to keep the file. Otherwise, it is deleted by default                                           |
+Now, apply it to a real code block (warning, the meta is hidden by real
+codeblocks, unless you look at the markdown source):
+
+```bash {file: {name: greeting.sh}}
+# creates a file called "greeting.sh"
+echo "hello $USER!"
+```
+
+```txt {skipRun: true, output: true}
+hello cdaringe!
+```
+
+...and that file gets run!
+
+| meta-option       | type       | description                                                                                                  |
+| ----------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `skipRun`         | boolean?   | Do not execute this code block                                                                               |
+| `group`           | string?    | Run any same named group code blocks in the same file                                                        |
+| `cmd`             | string?    | Executable to run                                                                                            |
+| `args`            | string\[]? | Args to pass to the executable. Use the string "$ARG" to get the contents of the code fence                  |
+| `file`            | object?    | Flush the code block to a file then execute it. This is the default operation mode.                          |
+| `file.name`       | string?    | Name the file. Otherwise, a random filename is generated                                                     |
+| `file.autoRemove` | boolean?   | Set to false to keep the file. Otherwise, it is deleted by default                                           |
+| `output`          | boolean?   | Signify that this block is for capturing stdio from the above code block. Generally considered a private API |
+
+You can verify your compact YAML syntax using
+https://yaml-online-parser.appspot.com/.
+
+## Examples
+
+### Meta blocks
+
+The following block has meta: `` ```js {cmd: node, args: ["--eval", $ARG]}``
 
 ```js {cmd: node, args: ["--eval", $ARG]}
 // no file is written
 console.log(123);
 ```
 
-```js {file: {name: 456-demo.js, autoRemove: false}, cmd: node}
+```txt {skipRun: true, output: true}
+123
+```
+
+The following block has meta:
+`` ```js {file: {name: 456-demo.js, autoRemove: true}, cmd: node, args: [456-demo.js]}``
+
+```js {file: {name: 456-demo.js, autoRemove: true}, cmd: node, args: [456-demo.js]}
 console.log(456);
 ```
 
-You can verify your compact YAML syntax using
-https://yaml-online-parser.appspot.com/.
-
-## Examples
+```txt {skipRun: true, output: true}
+456
+```
 
 ### Share execution context
 
@@ -113,11 +138,11 @@ console.log(twoSquared);
 What about the square of a square?
 
 ```ts {group: group_demo}
-console.log(square(twoSquared));
+console.log(square(twoSquared) + 1);
 ```
 
 ```txt {skipRun: true, output: true}
-16
+17
 ```
 
 ## FAQ

@@ -22,11 +22,10 @@ Deno.test({
   async fn() {
     for (const [config, expected] of cases) {
       const outStream = new StringWriter();
-      const output = await exec.runCodeSnippet({
+      await exec.runCodeSnippet({
         ...config,
         outStream,
       });
-      assertEquals(output.statusCode, 0);
       assertEquals(outStream.toString(), expected);
       if (config.file?.name) await Deno.remove(config?.file.name);
     }

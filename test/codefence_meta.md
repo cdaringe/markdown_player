@@ -15,9 +15,9 @@
 #!/usr/bin/env deno
 ```
 
-# supported meta - caseSingleMetaWhitespaceWriteFile
+# supported meta - caseMetaMulti
 
-```ts {file: { name: /path/to/my username/file.ts }, cmd: cmd, args: [cmd, arg0, --flag]}
+```ts {file: { name: /path/to/my username/file.ts }, cmd: cmd, args: [arg0, --flag]}
 ```
 
 # skipped md

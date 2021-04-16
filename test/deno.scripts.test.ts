@@ -15,13 +15,11 @@ Deno.test({
     const cases = [[caseSleepEcho, `{"x":2}\n`] as const];
     for (const [config, expected] of cases) {
       const outStream = new StringWriter();
-
-      const output = await exec.runCodeSnippet({
+      await exec.runCodeSnippet({
         ...config,
         outStream,
       });
       assertEquals(outStream.toString(), expected);
-      assertEquals(output.statusCode, 0);
     }
   },
 });
