@@ -17,6 +17,7 @@ import type {
   ExecutionConfigCreator,
 } from "./execution.interfaces.ts";
 import { createFenceBlockStream } from "./create-fence-block-stream.ts";
+import { collectAsync } from "./iter.ts";
 
 export * from "./execution.defaults.ts";
 export * from "./execution.interfaces.ts";
@@ -270,8 +271,7 @@ export async function runCodeBlockGroup([
     outStream: writer,
     errStream: writer,
   }).finally(terminate);
-  const outputs: string[] = [];
-  for await (const chunk of stream.readable) outputs.push(chunk);
+  const outputs = await collectAsync(stream.readable);
   await running;
   const result = cmds.map((cmd, i) => {
     const output = outputs[i];
