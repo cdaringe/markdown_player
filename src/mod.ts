@@ -57,9 +57,16 @@ export async function playFile(filename: string, options?: PlayFileOptions) {
         if (cmdIdx < 0) throw new Error("could not find cmd code block :(");
         const outputIdx = cmdIdx + 1;
         const outNode = nextAst.children[outputIdx] as MDAST | undefined;
-        if (outNode?.lang === "txt" && outNode?.meta?.match(/output:\s+true/)) {
+        const cmdMeta = cmd.node?.meta ? exec.parseNodeMeta(cmd.node.meta) : {};
+        const outMeta = outNode?.meta ? exec.parseNodeMeta(outNode.meta) : {};
+        if (cmdMeta.skipOutput) {
+          // skip
+          return;
+        } else if (outNode && outMeta.isExecutionOutput) {
+          // update
           outNode.value = trimmedOutput;
         } else {
+          // create
           nextAst.children.splice(
             outputIdx,
             0,

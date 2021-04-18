@@ -3,7 +3,7 @@ export function createOutputNode(text: string): MDAST {
   return {
     type: "code",
     lang: "txt",
-    meta: "{skipRun: true, output: true}",
+    meta: "{skipRun: true, isExecutionOutput: true}",
     value: text,
     children: [],
   };

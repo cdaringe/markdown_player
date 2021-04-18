@@ -25,12 +25,13 @@ export * from "./execution.interfaces.ts";
 const EXEC_GROUP_DELIM = `@@mdp_delim@@`;
 
 const codeFenceExecConfigSchema = zod.object({
-  output: zod.boolean().optional(),
+  isExecutionOutput: zod.boolean().optional(),
   group: zod
     .string()
     .refine((s) => s.match(/[a-zA-Z_]+/))
     .optional(),
   skipRun: zod.boolean().optional(),
+  skipOutput: zod.boolean().optional(),
   cmd: zod.string().optional(),
   file: zod
     .object({
@@ -41,6 +42,10 @@ const codeFenceExecConfigSchema = zod.object({
   args: zod.array(zod.string()).optional(),
 });
 export type CodeFenceConfig = zod.infer<typeof codeFenceExecConfigSchema>;
+
+export function parseNodeMeta(meta: MDAST["meta"]) {
+  return codeFenceExecConfigSchema.parse(yaml.parse(meta));
+}
 
 export const config = {
   ofMdNode(node: MDAST, schema: CodeFenceConfig): ExecutionConfig | undefined {
@@ -84,10 +89,9 @@ export const config = {
   getRunnable(nodes: MDAST[]) {
     return nodes
       .map(function filterMapExecutableBlock(node) {
-        const metaExecution = node.meta
-          ? codeFenceExecConfigSchema.parse(yaml.parse(node.meta))
-          : {};
-        const isSkipping = !!metaExecution.skipRun || !!metaExecution.output;
+        const metaExecution = node.meta ? parseNodeMeta(node.meta) : {};
+        const isSkipping = !!metaExecution.skipRun ||
+          !!metaExecution.isExecutionOutput;
         const shouldAttemptExecution = !isSkipping &&
           !!(metaExecution.cmd || DEFAULT_LANGUAGE_EXECUTORS[node.lang]);
         return shouldAttemptExecution
@@ -139,9 +143,10 @@ export async function runCodeSnippet(opts: ExecutionConfig) {
   );
   // console.log([cmd, ...args]);
   let proc: Deno.Process | null = null;
+  const cmdNArgs = [cmd, ...finalArgs];
   try {
     const procRun = Deno.run({
-      cmd: [cmd, ...finalArgs],
+      cmd: cmdNArgs,
       stdin: "inherit",
       stdout: "piped",
       stderr: "piped",
@@ -160,12 +165,22 @@ export async function runCodeSnippet(opts: ExecutionConfig) {
     procRun.stdout.close();
     procRun.stderr.close();
     if (status.code) {
+      const errContent = (() => {
+        try {
+          return errStream.toString();
+        } catch {
+          return "";
+        }
+      })();
       throw new Error(
         [
           `failed to run code block:`,
-          JSON.stringify(cmd, null, 2),
+          JSON.stringify(cmdNArgs, null, 2),
+          errContent,
           `exit code: ${status.code}`,
-        ].join("\n"),
+        ]
+          .filter(Boolean)
+          .join("\n"),
       );
     }
   } catch (err) {

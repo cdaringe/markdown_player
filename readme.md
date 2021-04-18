@@ -32,13 +32,13 @@ markdownPlayer.playFile("readme.md");
 - Observe the output
 
 ```ts
-import { getEmojiByName } from "https://deno.land/x/getmoji@1.1.0/mod.ts";
+import { getEmojiByName } from "https://deno.land/x/getmoji@1.2.4/mod.ts";
 const fileType = "markdown";
 const description = `Runs code fences in a ${fileType} file`;
 console.log(`${description} ${await getEmojiByName("pizza")}`);
 ```
 
-```txt {skipRun: true, output: true}
+```txt {skipRun: true, isExecutionOutput: true}
 Runs code fences in a markdown file 🍕
 ```
 
@@ -66,22 +66,23 @@ codeblocks, unless you look at the markdown source):
 echo "hello $USER!"
 ```
 
-```txt {skipRun: true, output: true}
+```txt {skipRun: true, isExecutionOutput: true}
 hello cdaringe!
 ```
 
 ...and that file gets run!
 
-| meta-option       | type       | description                                                                                                  |
-| ----------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `skipRun`         | boolean?   | Do not execute this code block                                                                               |
-| `group`           | string?    | Run any same named group code blocks in the same file                                                        |
-| `cmd`             | string?    | Executable to run                                                                                            |
-| `args`            | string\[]? | Args to pass to the executable. Use the string "$ARG" to get the contents of the code fence                  |
-| `file`            | object?    | Flush the code block to a file then execute it. This is the default operation mode.                          |
-| `file.name`       | string?    | Name the file. Otherwise, a random filename is generated                                                     |
-| `file.autoRemove` | boolean?   | Set to false to keep the file. Otherwise, it is deleted by default                                           |
-| `output`          | boolean?   | Signify that this block is for capturing stdio from the above code block. Generally considered a private API |
+| meta-option         | type       | description                                                                                                  |
+| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `skipRun`           | boolean?   | Do not execute this code block                                                                               |
+| `group`             | string?    | Run any same named group code blocks in the same file                                                        |
+| `cmd`               | string?    | Executable to run                                                                                            |
+| `args`              | string\[]? | Args to pass to the executable. Use the string "$ARG" to get the contents of the code fence                  |
+| `file`              | object?    | Flush the code block to a file then execute it. This is the default operation mode.                          |
+| `file.name`         | string?    | Name the file. Otherwise, a random filename is generated                                                     |
+| `file.autoRemove`   | boolean?   | Set to false to keep the file. Otherwise, it is deleted by default                                           |
+| `isExecutionOutput` | boolean?   | Signify that this block is for capturing stdio from the above code block. Generally considered a private API |
+| `skipOutput`        | boolean?   | Run the block, but skip writing output if appendOutput mode is also requested                                |
 
 You can verify your compact YAML syntax using
 https://yaml-online-parser.appspot.com/.
@@ -97,7 +98,7 @@ The following block has meta: `` ```js {cmd: node, args: ["--eval", $ARG]}``
 console.log(123);
 ```
 
-```txt {skipRun: true, output: true}
+```txt {skipRun: true, isExecutionOutput: true}
 123
 ```
 
@@ -108,7 +109,7 @@ The following block has meta:
 console.log(456);
 ```
 
-```txt {skipRun: true, output: true}
+```txt {skipRun: true, isExecutionOutput: true}
 456
 ```
 
@@ -131,18 +132,27 @@ const twoSquared = square(2);
 console.log(twoSquared);
 ```
 
-```txt {skipRun: true, output: true}
+```txt {skipRun: true, isExecutionOutput: true}
 4
 ```
 
 What about the square of a square?
 
 ```ts {group: group_demo}
-console.log(square(twoSquared) + 1);
+console.log(square(twoSquared));
 ```
 
-```txt {skipRun: true, output: true}
-17
+```txt {skipRun: true, isExecutionOutput: true}
+16
+```
+
+### Run a code block, but skip output
+
+use the `skipOutput` meta flag: `` ```ts {skipOutput: true}``
+
+```ts {skipOutput: true}
+// print out an enormous string!
+console.log([...Array(1e4)].join("a\n"));
 ```
 
 ## FAQ
