@@ -1,5 +1,7 @@
 import { patchInstallVersion, Task, Tasks } from "./.rad/mod.ts";
 
+const install: Task =
+  `deno cache --lock=lock.json --lock-write src/3p.ts test/3p/3p.ts`;
 const clean: Task = `rm -f .tmp*`;
 const lint: Task = `deno lint --unstable`;
 const _test: Task = `deno test -A --unstable`;
@@ -11,7 +13,8 @@ const check: Task = {
   dependsOn: [clean, formatCheck, lint, test],
   dependsOnSerial: true,
 };
-const run: Task = `deno run -A --unstable src/bin.ts readme.md --appendOutput`;
+const run: Task =
+  `deno run --lock=lock.json --cached-only -A --unstable src/bin.ts readme.md --appendOutput`;
 
 export const tasks: Tasks = {
   _test,
@@ -20,6 +23,7 @@ export const tasks: Tasks = {
   patchInstallVersion,
   ...{ clean, c: clean },
   ...{ lint, l: lint },
+  ...{ install, i: install },
   ...{ test, t: test },
   ...{ testdebug, td: testdebug },
   ...{ format, f: format },
