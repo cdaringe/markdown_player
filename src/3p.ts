@@ -4,8 +4,8 @@ export * as path from "https://deno.land/std@0.92.0/path/mod.ts";
 export {
   StringWriter,
   writerFromStreamWriter,
-} from "https://deno.land/std@0.92.0/io/mod.ts";
-export * as zod from "https://deno.land/x/zod@v3.0.0-alpha.33/mod.ts";
+} from "https://deno.land/std@0.99.0/io/mod.ts";
+export * as zod from "https://deno.land/x/zod@v3.2/mod.ts";
 import toMarkdown_ from "https://esm.sh/mdast-util-to-markdown";
 import fromMarkdown_ from "https://esm.sh/mdast-util-from-markdown@0.8.5";
 // import mdAstVisit_ from "https://esm.sh/unist-util-visit@2.0.3";

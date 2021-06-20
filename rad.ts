@@ -3,7 +3,7 @@ import { patchInstallVersion, Task, Tasks } from "./.rad/mod.ts";
 const install: Task =
   `deno cache --lock=lock.json --lock-write src/3p.ts test/3p/3p.ts`;
 const clean: Task = `rm -f .tmp*`;
-const lint: Task = `deno lint --unstable`;
+const lint: Task = `deno lint --unstable --log-level=debug`;
 const _test: Task = `deno test -A --unstable`;
 const test: Task = { dependsOn: [_test, clean], dependsOnSerial: true };
 const testdebug: Task = `${test} --inspect-brk`;

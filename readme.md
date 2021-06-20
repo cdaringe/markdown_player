@@ -56,7 +56,7 @@ flag!
 Code fences can be configured via single line yaml in the meta section. Consider
 the following markdown meta:
 
-`` ```bash {file: {name: greeting.sh}}``
+`` ```bash {file: {name: greeting.sh}} ``
 
 Now, apply it to a real code block (warning, the meta is hidden by real
 codeblocks, unless you look at the markdown source):
@@ -67,7 +67,7 @@ echo "hello $USER!"
 ```
 
 ```txt {skipRun: true, isExecutionOutput: true}
-hello cdaringe!
+hello c0d01a5!
 ```
 
 ...and that file gets run!
@@ -91,7 +91,7 @@ https://yaml-online-parser.appspot.com/.
 
 ### Meta blocks
 
-The following block has meta: `` ```js {cmd: node, args: ["--eval", $ARG]}``
+The following block has meta: `` ```js {cmd: node, args: ["--eval", $ARG]} ``
 
 ```js {cmd: node, args: ["--eval", $ARG]}
 // no file is written
@@ -103,7 +103,7 @@ console.log(123);
 ```
 
 The following block has meta:
-`` ```js {file: {name: 456-demo.js, autoRemove: true}, cmd: node, args: [456-demo.js]}``
+`` ```js {file: {name: 456-demo.js, autoRemove: true}, cmd: node, args: [456-demo.js]} ``
 
 ```js {file: {name: 456-demo.js, autoRemove: true}, cmd: node, args: [456-demo.js]}
 console.log(456);
@@ -148,7 +148,7 @@ console.log(square(twoSquared));
 
 ### Run a code block, but skip output
 
-use the `skipOutput` meta flag: `` ```ts {skipOutput: true}``
+use the `skipOutput` meta flag: `` ```ts {skipOutput: true} ``
 
 ```ts {skipOutput: true}
 // print out an enormous string!
