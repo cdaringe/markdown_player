@@ -27,6 +27,8 @@ markdownPlayer.playFile("readme.md");
 
 ## Preview
 
+This is a living document. Let's observe markdown_player in action!
+
 - Write code in code blocks
 - Run `markdown_player /path/to/file.md --appendOutput`
 - Observe the output
@@ -62,12 +64,12 @@ Now, apply it to a real code block (warning, the meta is hidden by real
 codeblocks, unless you look at the markdown source):
 
 ```bash {file: {name: greeting.sh}}
-# creates a file called "greeting.sh"
+# creates a file called "greeting.sh", as specified in the meta
 echo "hello $USER!"
 ```
 
 ```txt {skipRun: true, isExecutionOutput: true}
-hello c0d01a5!
+hello cdaringe!
 ```
 
 ...and that file gets run!

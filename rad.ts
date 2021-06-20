@@ -14,7 +14,7 @@ const check: Task = {
   dependsOnSerial: true,
 };
 const run: Task =
-  `deno run --lock=lock.json --cached-only -A --unstable src/bin.ts readme.md --appendOutput`;
+  `USER=cdaringe deno run --lock=lock.json --cached-only -A --unstable src/bin.ts readme.md --appendOutput`;
 
 export const tasks: Tasks = {
   _test,
