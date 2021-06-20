@@ -8,12 +8,12 @@ Write markdown documentation, _run_ markdown documentation!
 
 Install the CLI:
 
-`deno install --unstable -f -A -n markdown_player "https://deno.land/x/markdown_player@v1.2.1/src/bin.ts"`
+`deno install --unstable -f -A -n markdown_player "https://deno.land/x/markdown_player@v1.2.3/src/bin.ts"`
 
 Install the `deno` library:
 
 ```ts {skipRun: true}
-import * as markdownPlayer from "https://deno.land/x/markdown_player@v1.2.1/src/mod.ts";
+import * as markdownPlayer from "https://deno.land/x/markdown_player@v1.2.3/src/mod.ts";
 markdownPlayer.playFile("readme.md");
 ```
 
@@ -34,7 +34,7 @@ This is a living document. Let's observe markdown_player in action!
 - Observe the output
 
 ```ts
-import { getEmojiByName } from "https://deno.land/x/getmoji@1.2.1/mod.ts";
+import { getEmojiByName } from "https://deno.land/x/getmoji@1.2.3/mod.ts";
 const fileType = "markdown";
 const description = `Runs code fences in a ${fileType} file`;
 console.log(`${description} ${await getEmojiByName("pizza")}`);
