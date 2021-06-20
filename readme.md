@@ -8,12 +8,12 @@ Write markdown documentation, _run_ markdown documentation!
 
 Install the CLI:
 
-`deno install --unstable -f -A -n markdown_player "https://deno.land/x/markdown_player@v1.2.1/src/bin.ts"`
+`deno install --unstable -f -A -n markdown_player "https://deno.land/x/markdown_player@v1.2.2/src/bin.ts"`
 
 Install the `deno` library:
 
 ```ts {skipRun: true}
-import * as markdownPlayer from "https://deno.land/x/markdown_player@v1.2.1/src/mod.ts";
+import * as markdownPlayer from "https://deno.land/x/markdown_player@v1.2.2/src/mod.ts";
 markdownPlayer.playFile("readme.md");
 ```
 
@@ -32,7 +32,7 @@ markdownPlayer.playFile("readme.md");
 - Observe the output
 
 ```ts
-import { getEmojiByName } from "https://deno.land/x/getmoji@1.2.1/mod.ts";
+import { getEmojiByName } from "https://deno.land/x/getmoji@1.2.2/mod.ts";
 const fileType = "markdown";
 const description = `Runs code fences in a ${fileType} file`;
 console.log(`${description} ${await getEmojiByName("pizza")}`);
@@ -67,25 +67,7 @@ echo "hello $USER!"
 ```
 
 ```txt {skipRun: true, isExecutionOutput: true}
-hello c0d01a5!
-```
-
-...and that file gets run!
-
-| meta-option         | type       | description                                                                                                  |
-| ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `skipRun`           | boolean?   | Do not execute this code block                                                                               |
-| `group`             | string?    | Run any same named group code blocks in the same file                                                        |
-| `cmd`               | string?    | Executable to run                                                                                            |
-| `args`              | string\[]? | Args to pass to the executable. Use the string "$ARG" to get the contents of the code fence                  |
-| `file`              | object?    | Flush the code block to a file then execute it. This is the default operation mode.                          |
-| `file.name`         | string?    | Name the file. Otherwise, a random filename is generated                                                     |
-| `file.autoRemove`   | boolean?   | Set to false to keep the file. Otherwise, it is deleted by default                                           |
-| `isExecutionOutput` | boolean?   | Signify that this block is for capturing stdio from the above code block. Generally considered a private API |
-| `skipOutput`        | boolean?   | Run the block, but skip writing output if appendOutput mode is also requested                                |
-
-You can verify your compact YAML syntax using
-https://yaml-online-parser.appspot.com/.
+hello c1.2.2//yaml-online-parser.appspot.com/.
 
 ## Examples
 
